@@ -21,8 +21,13 @@ data class PlaybackPlan(
 class StreamResolver(private val server: PlexServer) {
 
     suspend fun resolve(item: Metadata, sessionId: String, quality: Quality, forceTranscode: Boolean): PlaybackPlan {
-        val part = item.media.firstOrNull()?.parts?.firstOrNull() ?: error("Este elemento no tiene ningún archivo reproducible")
-        Log.i(TAG, "Part id=${part.id} file=${part.file} exists=${part.exists} accessible=${part.accessible} container=${part.container}")
+        item.media.forEachIndexed { index, media ->
+            media.parts.forEach { p -> Log.i(TAG, "Media[$index] id=${media.id} part=${p.id} file=${p.file} exists=${p.exists} accessible=${p.accessible}") }
+        }
+        val mediaIndex = item.media.indexOfFirst { media ->
+            media.parts.isNotEmpty() && media.parts.all { it.exists != false && it.accessible != false }
+        }.takeIf { it >= 0 } ?: 0
+        val part = item.media.getOrNull(mediaIndex)?.parts?.firstOrNull() ?: error("Este elemento no tiene ningún archivo reproducible")
         if (part.exists == false || part.accessible == false) {
             error("El servidor Plex no puede leer el archivo de este vídeo (${if (part.exists == false) "no existe" else "sin acceso"}):\n${part.file.orEmpty()}")
         }
@@ -32,7 +37,7 @@ class StreamResolver(private val server: PlexServer) {
 
         val common = buildList {
             add("path" to "/library/metadata/${item.ratingKey}")
-            add("mediaIndex" to "0")
+            add("mediaIndex" to mediaIndex.toString())
             add("partIndex" to "0")
             add("session" to sessionId)
             add("X-Plex-Session-Identifier" to sessionId)
