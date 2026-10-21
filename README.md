@@ -1,46 +1,46 @@
 # PlexLite
 
-Cliente nativo y ligero de Plex para Google TV / Android TV (Kotlin + Jetpack Compose for TV + Media3/ExoPlayer).
+A lightweight native Plex client for Google TV / Android TV (Kotlin + Jetpack Compose for TV + Media3/ExoPlayer).
 
-## Qué hace distinto respecto a la app oficial
+## How it differs from the official app
 
-- **Interfaz nativa** (Compose, compilada con R8), sin web view.
-- **Direct play de verdad**: declara al servidor todos los códecs que el dispositivo decodifica por hardware
-  (se detectan en el arranque) y todos los formatos de audio que ExoPlayer + FFmpeg pueden decodificar
-  (AAC, AC3, E-AC3, DTS, TrueHD, FLAC, Opus…), además de los subtítulos SRT/ASS/PGS/VobSub. El servidor deja de
-  transcodificar sin motivo.
-- **Arranque rápido**: sin prueba de velocidad previa; empieza en cuanto hay ~1,5 s de búfer y sigue cargando
-  hasta 2 minutos por delante.
-- **Recuperación automática**: si el direct play falla a mitad de reproducción, cambia a transcodificación HLS
-  desde el mismo punto.
-- **Conexión al servidor**: prueba todas las conexiones directas en paralelo y elige la mejor; el relay de Plex
-  (~2 Mbps) solo se usa como último recurso, y en ese caso fuerza calidad baja.
-- Saltar intro / créditos (botón OK), siguiente episodio automático, reanudar, progreso sincronizado con Plex,
-  subtítulos externos (.srt) en direct play, selección de pistas de audio y subtítulos.
+- **Native UI** (Compose, built with R8), no web view.
+- **Real direct play**: it tells the server about every video codec the device decodes in hardware
+  (detected at startup) and every audio format ExoPlayer + FFmpeg can decode
+  (AAC, AC3, E-AC3, DTS, TrueHD, FLAC, Opus…), plus SRT/ASS/PGS/VobSub subtitles. The server stops
+  transcoding for no reason.
+- **Fast startup**: no upfront speed test; playback starts as soon as ~1.5 s is buffered and keeps loading
+  up to 2 minutes ahead.
+- **Automatic recovery**: if direct play fails mid-playback, it switches to HLS transcoding from the same
+  position.
+- **Server connection**: all direct connections are probed in parallel and the best one wins; the Plex relay
+  (~2 Mbps) is only a last resort, and when used it forces a low quality.
+- Skip intro / credits (OK button), auto-play next episode, resume, progress synced with Plex,
+  external subtitles (.srt) in direct play, audio and subtitle track selection.
 
-## Compilar
+## Build
 
 ```sh
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 ./gradlew :app:assembleRelease
 ```
 
-APK resultante: `app/build/outputs/apk/release/app-release.apk` (firmada con la clave de depuración, para instalación manual).
+Output APK: `app/build/outputs/apk/release/app-release.apk` (signed with the debug key, for sideloading).
 
-Usa siempre la versión `release` en la TV: la versión `debug` de Compose es notablemente más lenta.
+Always install the `release` build on the TV: Compose `debug` builds are noticeably slower.
 
-## Instalar en la TV
+## Install on the TV
 
-1. En la TV: **Ajustes → Sistema → Información → Compilación del SO**, pulsa 7 veces para activar las opciones de desarrollador.
-2. **Ajustes → Sistema → Opciones de desarrollador**: activa **Depuración USB** y **Depuración inalámbrica**.
-3. Dentro de *Depuración inalámbrica* → *Vincular dispositivo con código*: verás una IP:puerto y un código.
+1. On the TV: **Settings → System → About → OS build**, press it 7 times to enable developer options.
+2. **Settings → System → Developer options**: enable **USB debugging** and **Wireless debugging**.
+3. Inside *Wireless debugging* → *Pair device with pairing code*: you'll see an IP:port and a code.
 
 ```sh
 ADB=/opt/homebrew/share/android-commandlinetools/platform-tools/adb
-$ADB pair IP_DE_LA_TV:PUERTO_DE_VINCULACION     # introduce el código
-$ADB connect IP_DE_LA_TV:PUERTO_DE_DEPURACION   # el puerto que aparece en la pantalla principal de Depuración inalámbrica
+$ADB pair TV_IP:PAIRING_PORT        # enter the code
+$ADB connect TV_IP:DEBUG_PORT       # the port shown on the main Wireless debugging screen
 $ADB install -r app/build/outputs/apk/release/app-release.apk
 ```
 
-La app aparece como **PlexLite** en la fila de apps.
+The app shows up as **PlexLite** in the apps row.
 
-Para ver logs si algo falla: `$ADB logcat | grep -iE 'plexlite|exoplayer|media3'`.
+To check logs if something goes wrong: `$ADB logcat | grep -iE 'plexlite|exoplayer|media3'`.
