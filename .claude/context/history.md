@@ -98,3 +98,6 @@ entry for every meaningful change so future sessions keep the thread.
     (offscreen layer + `DstIn` gradient), and the minimal-scroll margin keeps the focused chip out of the fade.
     Back inside a library: from the content it reveals the bar focused on the current library; from the bar it
     returns Home with focus on the "Home" chip (`AppGraph.focusHomeChip`), not on the first card.
+32. **Library chips no longer clipped vertically** — the chips row (a `LazyRow`) clips to its bounds, so the 1.1×
+    focus scale and the press effect cut the top and bottom of the pill border (the search icon, outside the row,
+    looked fine). The row now has 6 dp vertical content padding.

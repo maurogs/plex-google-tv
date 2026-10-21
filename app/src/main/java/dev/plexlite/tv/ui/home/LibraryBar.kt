@@ -85,7 +85,8 @@ fun LibraryBar(
             LazyRow(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = edge),
+                // Vertical room so the focused (scaled-up) chip and its press effect aren't clipped by the list.
+                contentPadding = PaddingValues(horizontal = edge, vertical = 6.dp),
                 modifier = Modifier.weight(1f).fadingEdges(listState, fade),
             ) {
                 item(key = "home") {
