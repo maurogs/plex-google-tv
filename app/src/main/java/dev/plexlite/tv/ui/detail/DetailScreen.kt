@@ -1,0 +1,226 @@
+package dev.plexlite.tv.ui.detail
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.tv.material3.Button
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.FilterChip
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.OutlinedButton
+import androidx.tv.material3.Text
+import coil3.compose.AsyncImage
+import dev.plexlite.tv.data.AppGraph
+import dev.plexlite.tv.data.Metadata
+import dev.plexlite.tv.ui.components.CardStyle
+import dev.plexlite.tv.ui.components.CenteredMessage
+import dev.plexlite.tv.ui.components.MediaCard
+import dev.plexlite.tv.ui.components.formatClock
+import dev.plexlite.tv.ui.components.formatDuration
+import dev.plexlite.tv.ui.theme.Background
+import kotlinx.coroutines.launch
+
+class DetailViewModel(savedState: SavedStateHandle) : ViewModel() {
+    private val ratingKey: String = checkNotNull(savedState["ratingKey"])
+
+    var item by mutableStateOf<Metadata?>(null)
+        private set
+    var seasons by mutableStateOf<List<Metadata>>(emptyList())
+        private set
+    var selectedSeason by mutableStateOf<String?>(null)
+        private set
+    var episodes by mutableStateOf<List<Metadata>>(emptyList())
+        private set
+    var error by mutableStateOf<String?>(null)
+        private set
+
+    fun refresh() {
+        viewModelScope.launch {
+            val server = AppGraph.requireServer()
+            runCatching { server.metadata(ratingKey) }
+                .onSuccess { loaded ->
+                    item = loaded
+                    if (loaded?.type == "show") loadSeasons(loaded)
+                }
+                .onFailure { if (item == null) error = "No se pudo cargar: ${it.message}" }
+        }
+    }
+
+    private suspend fun loadSeasons(show: Metadata) {
+        val list = runCatching { AppGraph.requireServer().children(show.ratingKey) }.getOrDefault(emptyList())
+        seasons = list
+        val onDeckSeason = show.onDeck?.metadata?.firstOrNull()?.parentRatingKey
+        val target = selectedSeason ?: onDeckSeason?.takeIf { key -> list.any { it.ratingKey == key } }
+            ?: list.firstOrNull { !it.isWatched }?.ratingKey ?: list.firstOrNull()?.ratingKey
+        target?.let { selectSeason(it) }
+    }
+
+    fun selectSeason(seasonKey: String) {
+        selectedSeason = seasonKey
+        viewModelScope.launch {
+            episodes = runCatching { AppGraph.requireServer().children(seasonKey) }.getOrDefault(emptyList())
+        }
+    }
+
+    fun toggleWatched() {
+        val current = item ?: return
+        viewModelScope.launch {
+            runCatching { AppGraph.requireServer().scrobble(current.ratingKey, !current.isWatched) }
+            refresh()
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun DetailScreen(onPlay: (Metadata, Boolean) -> Unit, vm: DetailViewModel = viewModel()) {
+    LifecycleResumeEffect(Unit) {
+        vm.refresh()
+        onPauseOrDispose { }
+    }
+    val item = vm.item
+    when {
+        item != null -> DetailContent(item, vm, onPlay)
+        vm.error != null -> CenteredMessage(vm.error!!)
+        else -> CenteredMessage("Cargando…")
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata, Boolean) -> Unit) {
+    val server = AppGraph.server
+    val playFocus = remember { FocusRequester() }
+    val isShow = item.type == "show"
+    val playTarget: Metadata? = if (isShow) item.onDeck?.metadata?.firstOrNull() ?: vm.episodes.firstOrNull() else item
+
+    Box(Modifier.fillMaxSize()) {
+        AsyncImage(
+            model = server?.photoUrl(item.art, 1280, 720),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+            alpha = 0.35f,
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(0f to Background, 0.75f to Background.copy(alpha = 0.6f), 1f to Color.Transparent),
+            ),
+        )
+        LazyColumn(
+            contentPadding = PaddingValues(vertical = 48.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item(key = "info") {
+                Column(Modifier.padding(horizontal = 48.dp).fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(item.title, style = MaterialTheme.typography.displaySmall, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(metaLine(item), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    item.summary?.takeIf { it.isNotBlank() }?.let {
+                        Text(it, style = MaterialTheme.typography.bodyLarge, color = Color.White, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
+                        if (playTarget != null) {
+                            val resume = playTarget.viewOffset?.takeIf { it > 0 }
+                            val label = buildString {
+                                append(if (resume != null) "Reanudar" else "Reproducir")
+                                if (isShow) playTarget.episodeLabel?.let { append(" $it") }
+                                if (resume != null) append(" (${formatClock(resume)})")
+                            }
+                            Button(onClick = { onPlay(playTarget, false) }, modifier = Modifier.focusRequester(playFocus)) { Text(label) }
+                            if (resume != null) {
+                                OutlinedButton(onClick = { onPlay(playTarget, true) }) { Text("Desde el principio") }
+                            }
+                        }
+                        OutlinedButton(onClick = vm::toggleWatched) {
+                            Text(if (item.isWatched) "Marcar como no visto" else "Marcar como visto")
+                        }
+                    }
+                }
+            }
+            if (isShow && vm.seasons.isNotEmpty()) {
+                item(key = "seasons") {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 48.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(vm.seasons, key = { it.ratingKey }) { season ->
+                            FilterChip(
+                                selected = season.ratingKey == vm.selectedSeason,
+                                onClick = { vm.selectSeason(season.ratingKey) },
+                            ) { Text(season.title) }
+                        }
+                    }
+                }
+                item(key = "episodes") {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    ) {
+                        items(vm.episodes.distinctBy { it.ratingKey }, key = { it.ratingKey }) { episode ->
+                            MediaCard(
+                                item = episode,
+                                style = CardStyle.WIDE,
+                                onClick = { onPlay(episode, false) },
+                                width = 280.dp,
+                                title = "${episode.index ?: ""}. ${episode.title}",
+                                subtitle = episode.duration?.let { formatDuration(it) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(item.ratingKey, playTarget != null) {
+        if (playTarget != null) runCatching { playFocus.requestFocus() }
+    }
+}
+
+private fun metaLine(item: Metadata): String = listOfNotNull(
+    item.year?.toString(),
+    item.contentRating,
+    item.duration?.takeIf { item.type == "movie" }?.let { formatDuration(it) },
+    item.childCount?.takeIf { item.type == "show" }?.let { if (it == 1) "1 temporada" else "$it temporadas" },
+    item.audienceRating?.let { "★ %.1f".format(it) },
+    item.media.firstOrNull()?.let { media ->
+        listOfNotNull(
+            media.videoResolution?.let { if (it.all(Char::isDigit)) "${it}p" else it.uppercase() },
+            media.videoDynamicRange?.takeIf { it != "SDR" },
+            media.audioCodec?.uppercase(),
+        ).joinToString(" ").ifEmpty { null }
+    },
+    item.genres.take(3).joinToString(", ") { it.tag }.ifEmpty { null },
+).joinToString("  ·  ")

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PlexLite</string>
+    <color name="background">#FF101114</color>
+    <color name="accent">#FFE5A00D</color>
+</resources>

@@ -1,0 +1,453 @@
+package dev.plexlite.tv.player
+
+import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.KeyEvent
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.ui.PlayerView
+import dev.plexlite.tv.data.AppGraph
+import dev.plexlite.tv.data.Http
+import dev.plexlite.tv.data.Metadata
+import dev.plexlite.tv.data.Part
+import dev.plexlite.tv.data.PlexServer
+import dev.plexlite.tv.data.Stream
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import java.util.UUID
+
+@UnstableApi
+class PlayerActivity : ComponentActivity() {
+
+    private lateinit var server: PlexServer
+    private lateinit var resolver: StreamResolver
+    private lateinit var player: ExoPlayer
+    private lateinit var playerView: PlayerView
+    private lateinit var titleView: TextView
+    private lateinit var hintView: TextView
+    private lateinit var messageView: TextView
+
+    private var current: Metadata? = null
+    private var currentPart: Part? = null
+    private var sessionId = newSessionId()
+    private var transcoding = false
+    private var pendingTrackPart: Part? = null
+    private var queue: List<Metadata> = emptyList()
+    private var queueId: Long? = null
+    private var hintAction: (() -> Unit)? = null
+    private var loadJob: Job? = null
+    private var released = false
+    private var lastReportedState: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val activeServer = AppGraph.server
+        val ratingKey = intent.getStringExtra(EXTRA_RATING_KEY)
+        if (activeServer == null || ratingKey == null) {
+            finish()
+            return
+        }
+        server = activeServer
+        resolver = StreamResolver(server)
+        player = buildPlayer()
+        buildViews()
+        player.addListener(listener)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (playerView.isControllerFullyVisible) playerView.hideController() else finish()
+            }
+        })
+
+        load(ratingKey, fromStart = intent.getBooleanExtra(EXTRA_FROM_START, false), forceTranscode = false)
+        startTickers()
+    }
+
+    private fun buildPlayer(): ExoPlayer {
+        val renderers = DefaultRenderersFactory(this)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+            .setEnableDecoderFallback(true)
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(30_000, 120_000, 1_500, 3_000)
+            .setTargetBufferBytes(200 * 1024 * 1024)
+            .setPrioritizeTimeOverSizeThresholds(false)
+            .build()
+        val httpFactory = OkHttpDataSource.Factory(Http.client)
+            .setDefaultRequestProperties(AppGraph.identity.headers.mapValues { (_, v) -> v.filter { it.code in 32..126 } })
+        val extractors = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
+        val mediaSourceFactory = DefaultMediaSourceFactory(DefaultDataSource.Factory(this, httpFactory), extractors)
+        return ExoPlayer.Builder(this, renderers)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .setLoadControl(loadControl)
+            .setSeekBackIncrementMs(10_000)
+            .setSeekForwardIncrementMs(30_000)
+            .setAudioAttributes(
+                AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
+                true,
+            )
+            .setHandleAudioBecomingNoisy(true)
+            .build()
+    }
+
+    private fun buildViews() {
+        val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        playerView = PlayerView(this).apply {
+            player = this@PlayerActivity.player
+            useController = true
+            controllerShowTimeoutMs = 4_000
+            setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+            setShowSubtitleButton(true)
+            setShowNextButton(false)
+            setShowPreviousButton(false)
+            setShowShuffleButton(false)
+            setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
+                titleView.visibility = visibility
+                updateHint()
+            })
+        }
+        root.addView(playerView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+
+        titleView = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+            setShadowLayer(8f, 0f, 0f, Color.BLACK)
+            setPadding(dp(48), dp(32), dp(48), dp(16))
+            visibility = View.GONE
+        }
+        root.addView(titleView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP))
+
+        hintView = TextView(this).apply {
+            setTextColor(Color.BLACK)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            setPadding(dp(24), dp(12), dp(24), dp(12))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(24).toFloat()
+                setColor(Color.WHITE)
+            }
+            visibility = View.GONE
+        }
+        root.addView(
+            hintView,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END)
+                .apply { setMargins(0, 0, dp(64), dp(64)) },
+        )
+
+        messageView = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+            gravity = Gravity.CENTER
+            setPadding(dp(96), 0, dp(96), 0)
+            visibility = View.GONE
+        }
+        root.addView(messageView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+
+        setContentView(root)
+    }
+
+    private fun load(ratingKey: String, fromStart: Boolean, forceTranscode: Boolean, resumeAtMs: Long? = null) {
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch {
+            messageView.visibility = View.GONE
+            val item = runCatching { server.metadata(ratingKey) }.getOrNull()
+            if (item == null) {
+                showError("No se pudo cargar el elemento.")
+                return@launch
+            }
+            current = item
+            titleView.text = when (item.type) {
+                "episode" -> listOfNotNull(item.grandparentTitle, item.episodeLabel, item.title).joinToString("  ·  ")
+                else -> item.title
+            }
+            if (item.type == "episode" && queue.none { it.ratingKey == item.ratingKey }) loadQueue(item.ratingKey)
+
+            val plan = runCatching {
+                resolver.resolve(item, sessionId, AppGraph.prefs.quality, forceTranscode)
+            }.getOrElse {
+                showError("No se pudo iniciar la reproducción: ${it.message}")
+                return@launch
+            }
+            transcoding = plan.transcode
+            currentPart = plan.part
+            pendingTrackPart = if (plan.transcode) null else plan.part
+            applyDefaultTrackPreferences(plan.part, plan.transcode)
+
+            val startMs = resumeAtMs ?: if (fromStart) 0L else item.viewOffset ?: 0L
+            player.setMediaItem(plan.mediaItem, startMs)
+            player.prepare()
+            player.playWhenReady = true
+            report("buffering")
+        }
+    }
+
+    private fun loadQueue(ratingKey: String) {
+        lifecycleScope.launch {
+            runCatching { server.playQueue(ratingKey) }.onSuccess {
+                queue = it.metadata
+                queueId = it.playQueueID
+            }
+        }
+    }
+
+    private fun applyDefaultTrackPreferences(part: Part, transcode: Boolean) {
+        val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
+        val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .clearOverrides()
+            .setPreferredAudioLanguage(audio?.languageCode)
+            .setPreferredTextLanguage(if (transcode) null else subtitle?.languageCode)
+            .setIgnoredTextSelectionFlags(if (subtitle == null || transcode) C.SELECTION_FLAG_DEFAULT else 0)
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, transcode)
+            .build()
+    }
+
+    private fun applyExactTracks(tracks: Tracks) {
+        val part = pendingTrackPart ?: return
+        if (tracks.groups.isEmpty()) return
+        pendingTrackPart = null
+        val builder = player.trackSelectionParameters.buildUpon()
+        part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }?.let { stream ->
+            findTrack(tracks, C.TRACK_TYPE_AUDIO, stream)?.let { builder.setOverrideForType(it) }
+        }
+        part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }?.let { stream ->
+            findTrack(tracks, C.TRACK_TYPE_TEXT, stream)?.let { builder.setOverrideForType(it) }
+        }
+        player.trackSelectionParameters = builder.build()
+    }
+
+    private fun findTrack(tracks: Tracks, type: Int, stream: Stream): TrackSelectionOverride? {
+        val expectedIds = if (stream.key != null) {
+            setOf(StreamResolver.sidecarId(stream))
+        } else {
+            setOfNotNull(stream.index?.let { (it + 1).toString() })
+        }
+        val wantedLanguage = stream.languageCode?.let { Util.normalizeLanguageCode(it) }
+        val candidates = tracks.groups.filter { it.type == type }
+        for (group in candidates) {
+            for (i in 0 until group.length) {
+                val format = group.getTrackFormat(i)
+                val id = format.id?.substringAfterLast(':')
+                val language = format.language?.let { Util.normalizeLanguageCode(it) }
+                val languageOk = wantedLanguage == null || language == null || language == wantedLanguage
+                if (id != null && id in expectedIds && languageOk) return TrackSelectionOverride(group.mediaTrackGroup, i)
+            }
+        }
+        return null
+    }
+
+    private val listener = object : Player.Listener {
+        override fun onTracksChanged(tracks: Tracks) = applyExactTracks(tracks)
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            report(
+                when {
+                    isPlaying -> "playing"
+                    player.playbackState == Player.STATE_BUFFERING -> "buffering"
+                    else -> "paused"
+                },
+            )
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState != Player.STATE_ENDED) return
+            report("stopped", force = true)
+            val next = nextItem()
+            if (next != null && AppGraph.prefs.autoPlayNext) playNext(next) else finish()
+        }
+
+        override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+            if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                report(if (player.isPlaying) "playing" else "paused", force = true)
+                updateHint()
+            }
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            val item = current ?: return
+            if (!transcoding) {
+                val position = player.currentPosition
+                rotateSession()
+                load(item.ratingKey, fromStart = false, forceTranscode = true, resumeAtMs = position)
+            } else {
+                showError("Error de reproducción: ${error.errorCodeName}\n${error.message.orEmpty()}")
+            }
+        }
+    }
+
+    private fun startTickers() {
+        lifecycleScope.launch {
+            while (isActive) {
+                delay(500)
+                updateHint()
+            }
+        }
+        lifecycleScope.launch {
+            while (isActive) {
+                delay(10_000)
+                if (player.isPlaying) report("playing", force = true)
+            }
+        }
+    }
+
+    private fun updateHint() {
+        val item = current
+        if (item == null || playerView.isControllerFullyVisible || player.playbackState == Player.STATE_IDLE) {
+            setHint(null, null)
+            return
+        }
+        val position = player.currentPosition
+        val intro = item.markers.firstOrNull { it.type == "intro" && position >= it.startTimeOffset && position < it.endTimeOffset - 1_000 }
+        val credits = item.markers.firstOrNull { it.type == "credits" && position >= it.startTimeOffset && (it.final || position < it.endTimeOffset - 1_000) }
+        val next = nextItem()
+        when {
+            intro != null -> setHint("OK  ·  Saltar intro") { player.seekTo(intro.endTimeOffset) }
+            credits != null && next != null -> setHint("OK  ·  Siguiente episodio") { playNext(next) }
+            credits != null && !credits.final -> setHint("OK  ·  Saltar créditos") { player.seekTo(credits.endTimeOffset) }
+            else -> setHint(null, null)
+        }
+    }
+
+    private fun setHint(text: String?, action: (() -> Unit)?) {
+        hintAction = action
+        if (text == null) {
+            hintView.visibility = View.GONE
+        } else {
+            hintView.text = text
+            hintView.visibility = View.VISIBLE
+        }
+    }
+
+    private fun nextItem(): Metadata? {
+        val item = current ?: return null
+        val index = queue.indexOfFirst { it.ratingKey == item.ratingKey }
+        return if (index >= 0) queue.getOrNull(index + 1) else null
+    }
+
+    private fun playNext(next: Metadata) {
+        report("stopped", force = true)
+        rotateSession()
+        player.stop()
+        setHint(null, null)
+        load(next.ratingKey, fromStart = false, forceTranscode = false)
+    }
+
+    private fun rotateSession() {
+        val oldSession = sessionId
+        val wasTranscoding = transcoding
+        sessionId = newSessionId()
+        transcoding = false
+        if (wasTranscoding) AppGraph.appScope.launch { runCatching { server.stopTranscode(oldSession) } }
+    }
+
+    private fun report(state: String, force: Boolean = false) {
+        val item = current ?: return
+        if (!force && state == lastReportedState) return
+        lastReportedState = state
+        val position = player.currentPosition.coerceAtLeast(0)
+        val duration = player.duration.takeIf { it > 0 } ?: item.duration ?: 0L
+        val session = sessionId
+        val queueItem = queue.firstOrNull { it.ratingKey == item.ratingKey }
+        val reported = if (queueItem?.playQueueItemID != null) item.copy(playQueueItemID = queueItem.playQueueItemID) else item
+        val pq = queueId
+        AppGraph.appScope.launch { runCatching { server.timeline(reported, state, position, duration, session, pq) } }
+    }
+
+    private fun showError(message: String) {
+        messageView.text = message
+        messageView.visibility = View.VISIBLE
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (!released && !playerView.isControllerFullyVisible) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                    val action = hintAction
+                    if (action != null) {
+                        if (event.action == KeyEvent.ACTION_UP) action()
+                        return true
+                    }
+                }
+                KeyEvent.KEYCODE_DPAD_LEFT -> {
+                    if (event.action == KeyEvent.ACTION_DOWN) {
+                        player.seekBack()
+                        playerView.showController()
+                    }
+                    return true
+                }
+                KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                    if (event.action == KeyEvent.ACTION_DOWN) {
+                        player.seekForward()
+                        playerView.showController()
+                    }
+                    return true
+                }
+            }
+        }
+        return (!released && playerView.dispatchKeyEvent(event)) || super.dispatchKeyEvent(event)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        releasePlayer()
+        finish()
+    }
+
+    override fun onDestroy() {
+        releasePlayer()
+        super.onDestroy()
+    }
+
+    private fun releasePlayer() {
+        if (released || !::player.isInitialized) return
+        released = true
+        report("stopped", force = true)
+        if (transcoding) {
+            val session = sessionId
+            AppGraph.appScope.launch { runCatching { server.stopTranscode(session) } }
+        }
+        player.removeListener(listener)
+        player.release()
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    companion object {
+        private const val EXTRA_RATING_KEY = "rating_key"
+        private const val EXTRA_FROM_START = "from_start"
+
+        private fun newSessionId() = UUID.randomUUID().toString()
+
+        fun intent(context: Context, ratingKey: String, fromStart: Boolean): Intent =
+            Intent(context, PlayerActivity::class.java)
+                .putExtra(EXTRA_RATING_KEY, ratingKey)
+                .putExtra(EXTRA_FROM_START, fromStart)
+    }
+}
