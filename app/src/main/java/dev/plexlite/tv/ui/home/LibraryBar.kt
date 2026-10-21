@@ -40,10 +40,7 @@ data class HeaderActions(
 fun LibraryBar(selectedKey: String?, actions: HeaderActions, modifier: Modifier = Modifier) {
     val sections = AppGraph.libraryLayout.visible(AppGraph.sections)
     Row(modifier = modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-        ServerMenuButton(
-            serverName = AppGraph.server?.saved?.name ?: stringResource(R.string.app_name),
-            actions = actions,
-        )
+        ServerMenuButton(actions = actions)
         Spacer(Modifier.width(24.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
             item(key = "search") { SearchChip(onClick = actions.onSearch) }

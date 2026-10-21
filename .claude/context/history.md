@@ -70,3 +70,7 @@ entry for every meaningful change so future sessions keep the thread.
     minimal-scroll `BringIntoViewSpec`. Action row redesigned: white primary pill (accent when focused) and
     round icon buttons (restart, watched) that expand to show their label on focus; quality/audio/subtitle
     chips moved to their own compact row (the subtitle chip no longer truncates to "…"); cast photos 112 → 72 dp.
+27. **User name in the header** — the header dropdown now shows the current Plex Home user (avatar + name,
+    e.g. "Tucli") instead of the server name, capped at 260 dp with an ellipsis for long names; falls back to
+    the server name when no user is known. "Change server" (still only shown with >1 server) now shows the
+    current server name underneath, since the header no longer does.

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -52,7 +54,10 @@ private enum class MenuPage { MAIN, LANGUAGE }
 private data class MenuRow(val label: String, val value: String? = null, val checked: Boolean = false, val onClick: () -> Unit)
 
 @Composable
-fun ServerMenuButton(serverName: String, actions: HeaderActions) {
+fun ServerMenuButton(actions: HeaderActions) {
+    val user = AppGraph.prefs.currentUser
+    val serverName = AppGraph.server?.saved?.name
+    val title = user?.title?.takeIf { it.isNotBlank() } ?: serverName ?: stringResource(R.string.app_name)
     val canChangeServer = (AppGraph.serverCount ?: 0) > 1
     val canChangeUser = (AppGraph.homeUserCount ?: 0) > 1
     var expanded by remember { mutableStateOf(false) }
@@ -84,12 +89,19 @@ fun ServerMenuButton(serverName: String, actions: HeaderActions) {
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val user = AppGraph.prefs.currentUser
-                if (user != null && canChangeUser) {
+                if (user != null) {
                     UserAvatar(user, 36.dp)
                     Spacer(Modifier.width(12.dp))
                 }
-                Text(serverName, style = MaterialTheme.typography.headlineSmall, color = Accent, fontWeight = FontWeight.Bold)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Accent,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 260.dp),
+                )
                 Spacer(Modifier.width(8.dp))
                 Text("▾", style = MaterialTheme.typography.titleLarge, color = Accent)
             }
@@ -109,7 +121,7 @@ fun ServerMenuButton(serverName: String, actions: HeaderActions) {
                         expanded = false
                         actions.onChangeUser()
                     }.takeIf { canChangeUser },
-                    MenuRow(stringResource(R.string.menu_change_server)) {
+                    MenuRow(stringResource(R.string.menu_change_server), serverName) {
                         expanded = false
                         actions.onChangeServer()
                     }.takeIf { canChangeServer },

@@ -83,8 +83,9 @@ hints use the OK button.
 - Spanish conversation; **all docs in English**; Claude never commits — it proposes a commit message.
 - Profile picker ("¿Quién está viendo?") on launch with 5 s auto sign-in countdown for the last user,
   plus "remember my choice" checkbox / Settings switch to skip it. PIN users always ask for the PIN.
-- Server name in the header is a dropdown: Switch user (only if >1 Home user), Change server (only if
-  >1 server), App language, Organize libraries, Settings.
+- The header dropdown shows the current user (avatar + name, max 260 dp with ellipsis; server name as fallback):
+  Switch user (only if >1 Home user), Change server (only if >1 server, shows the current server), App language,
+  Organize libraries, Settings.
 - Library bar: fixed "Inicio" first, then libraries in the user's order; it also appears inside libraries.
 - Organize libraries: OK enters move mode (↑↓, OK drops, Back cancels); eye button on the left hides/shows.
   Layout is stored per user and per server; hidden libraries disappear from the bar and from Home rows
