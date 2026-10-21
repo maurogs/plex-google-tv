@@ -132,6 +132,9 @@ data class Part(
     val duration: Long? = null,
     val size: Long? = null,
     val container: String? = null,
+    val file: String? = null,
+    val exists: Boolean? = null,
+    val accessible: Boolean? = null,
     val decision: String? = null,
     @SerialName("Stream") val streams: List<Stream> = emptyList(),
 )

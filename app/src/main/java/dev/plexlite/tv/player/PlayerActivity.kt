@@ -181,7 +181,7 @@ class PlayerActivity : ComponentActivity() {
         loadJob?.cancel()
         loadJob = lifecycleScope.launch {
             messageView.visibility = View.GONE
-            val item = runCatching { server.metadata(ratingKey) }.getOrNull()
+            val item = runCatching { server.metadata(ratingKey, checkFiles = true) }.getOrNull()
             if (item == null) {
                 showError("No se pudo cargar el elemento.")
                 return@launch

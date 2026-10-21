@@ -22,6 +22,10 @@ class StreamResolver(private val server: PlexServer) {
 
     suspend fun resolve(item: Metadata, sessionId: String, quality: Quality, forceTranscode: Boolean): PlaybackPlan {
         val part = item.media.firstOrNull()?.parts?.firstOrNull() ?: error("Este elemento no tiene ningún archivo reproducible")
+        Log.i(TAG, "Part id=${part.id} file=${part.file} exists=${part.exists} accessible=${part.accessible} container=${part.container}")
+        if (part.exists == false || part.accessible == false) {
+            error("El servidor Plex no puede leer el archivo de este vídeo (${if (part.exists == false) "no existe" else "sin acceso"}):\n${part.file.orEmpty()}")
+        }
         val effectiveQuality = if (server.saved.relay && quality == Quality.ORIGINAL) Quality.MBPS_2 else quality
         val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
         val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
