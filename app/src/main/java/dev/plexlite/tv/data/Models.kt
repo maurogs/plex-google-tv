@@ -2,6 +2,11 @@ package dev.plexlite.tv.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonTransformingSerializer
 
 @Serializable
 data class Envelope(@SerialName("MediaContainer") val container: MediaContainer = MediaContainer())
@@ -96,7 +101,14 @@ data class Metadata(
 }
 
 @Serializable
-data class OnDeck(@SerialName("Metadata") val metadata: List<Metadata> = emptyList())
+data class OnDeck(
+    @SerialName("Metadata") @Serializable(with = MetadataListSerializer::class) val metadata: List<Metadata> = emptyList(),
+)
+
+object MetadataListSerializer : JsonTransformingSerializer<List<Metadata>>(ListSerializer(Metadata.serializer())) {
+    override fun transformDeserialize(element: JsonElement): JsonElement =
+        if (element is JsonObject) JsonArray(listOf(element)) else element
+}
 
 @Serializable
 data class Tag(val tag: String = "")
