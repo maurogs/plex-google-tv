@@ -20,10 +20,18 @@ data class PlaybackPlan(
 
 class StreamResolver(private val server: PlexServer) {
 
-    suspend fun resolve(item: Metadata, mediaIndex: Int, sessionId: String, quality: Quality, forceTranscode: Boolean): PlaybackPlan {
+    suspend fun resolve(
+        item: Metadata,
+        mediaIndex: Int,
+        sessionId: String,
+        quality: Quality,
+        forceTranscode: Boolean,
+        audioStreamId: Long? = null,
+    ): PlaybackPlan {
         val part = item.media.getOrNull(mediaIndex)?.parts?.firstOrNull() ?: error("Este elemento no tiene ningún archivo reproducible")
         val effectiveQuality = if (server.saved.relay && quality == Quality.ORIGINAL) Quality.MBPS_2 else quality
-        val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
+        val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.id == audioStreamId }
+            ?: part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
         val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
 
         val common = buildList {

@@ -16,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -40,6 +41,9 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.R as Media3R
+import dev.plexlite.tv.R
+import dev.plexlite.tv.data.Quality
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Http
 import dev.plexlite.tv.data.Metadata
@@ -79,6 +83,10 @@ class PlayerActivity : ComponentActivity() {
     private var lastReportedState: String? = null
     private var mediaCandidates: List<Int> = emptyList()
     private var currentAttempt = Attempt(0, false)
+    private var qualityOverride: Quality? = null
+    private var audioOverride: Long? = null
+    private lateinit var menu: OverlayMenu
+    private var menuOpener: View? = null
 
     private data class Attempt(val candidate: Int, val transcode: Boolean)
 
@@ -99,7 +107,11 @@ class PlayerActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (playerView.isControllerFullyVisible) playerView.hideController() else finish()
+                when {
+                    menu.back() -> Unit
+                    playerView.isControllerFullyVisible -> playerView.hideController()
+                    else -> finish()
+                }
             }
         })
 
@@ -178,9 +190,11 @@ class PlayerActivity : ComponentActivity() {
                 .apply { setMargins(0, 0, dp(64), dp(64)) },
         )
 
+        menu = OverlayMenu(this, root).apply { onClosed = ::onMenuClosed }
         buildErrorPanel(root)
 
         setContentView(root)
+        installControlButtons()
         styleControllerFocus(playerView)
     }
 
@@ -210,7 +224,7 @@ class PlayerActivity : ComponentActivity() {
             Log.i(StreamResolver.TAG, "Attempt media=$mediaIndex (${attempt.candidate + 1}/${mediaCandidates.size}) transcode=${attempt.transcode}")
 
             val plan = runCatching {
-                resolver.resolve(item, mediaIndex, sessionId, AppGraph.prefs.quality, attempt.transcode)
+                resolver.resolve(item, mediaIndex, sessionId, activeQuality, attempt.transcode, audioOverride)
             }.getOrElse {
                 Log.e(StreamResolver.TAG, "Resolve failed", it)
                 failOver(it.message ?: "No se pudo iniciar la reproducción.", null, resumeAtMs)
@@ -229,6 +243,126 @@ class PlayerActivity : ComponentActivity() {
             player.playWhenReady = true
             report("buffering")
         }
+    }
+
+    private val activeQuality: Quality get() = qualityOverride ?: AppGraph.prefs.quality
+
+    private fun activeAudioStream(part: Part): Stream? =
+        part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.id == audioOverride }
+            ?: part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
+
+    private fun installControlButtons() {
+        val controls = playerView.findViewById<ViewGroup>(Media3R.id.exo_basic_controls) ?: return
+        playerView.findViewById<View>(Media3R.id.exo_settings)?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        val template = playerView.findViewById<View>(Media3R.id.exo_subtitle)
+        fun button(icon: Int, description: String, onClick: (View) -> Unit) = ImageButton(this).apply {
+            setImageResource(icon)
+            contentDescription = description
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            template?.let { setPadding(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
+            setOnClickListener(onClick)
+        }
+        val width = template?.layoutParams?.width ?: dp(52)
+        val height = template?.layoutParams?.height ?: dp(52)
+        controls.addView(button(R.drawable.ic_audio, "Audio") { openAudioMenu(it) }, LinearLayout.LayoutParams(width, height))
+        controls.addView(button(R.drawable.ic_settings, "Ajustes") { openSettingsMenu(it) }, LinearLayout.LayoutParams(width, height))
+    }
+
+    private fun openMenu(opener: View, title: String, entries: () -> List<MenuEntry>) {
+        menuOpener = opener
+        playerView.controllerShowTimeoutMs = 0
+        playerView.showController()
+        menu.open(title, entries)
+    }
+
+    private fun onMenuClosed() {
+        playerView.controllerShowTimeoutMs = 8_000
+        playerView.showController()
+        menuOpener?.requestFocus()
+        menuOpener = null
+    }
+
+    private fun openAudioMenu(opener: View) {
+        val part = currentPart ?: return
+        openMenu(opener, "Audio") {
+            val active = activeAudioStream(part)
+            part.streams.filter { it.streamType == Stream.AUDIO }.map { stream ->
+                val title = stream.title?.takeIf { it.isNotBlank() }
+                MenuEntry(
+                    label = title ?: stream.displayTitle ?: stream.language ?: "Pista ${stream.index ?: stream.id}",
+                    value = if (title != null) stream.displayTitle else null,
+                    checked = stream.id == active?.id,
+                ) { selectAudio(part, stream) }
+            }
+        }
+    }
+
+    private fun selectAudio(part: Part, stream: Stream) {
+        menu.close()
+        if (stream.id == activeAudioStream(part)?.id) return
+        audioOverride = stream.id
+        lifecycleScope.launch {
+            val saved = runCatching { server.selectAudioStream(part.id, stream.id) }
+            if (saved.isFailure) Log.w(StreamResolver.TAG, "Could not save audio selection", saved.exceptionOrNull())
+            if (transcoding) {
+                restartAtCurrentPosition(currentAttempt.copy(transcode = true))
+            } else {
+                val override = findTrack(player.currentTracks, C.TRACK_TYPE_AUDIO, stream)
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().apply {
+                    if (override != null) setOverrideForType(override) else {
+                        clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                        setPreferredAudioLanguage(stream.languageCode)
+                    }
+                }.build()
+            }
+        }
+    }
+
+    private fun openSettingsMenu(opener: View) {
+        openMenu(opener, "Ajustes") {
+            listOf(
+                MenuEntry("Modo de reproducción", modeLabel()) { menu.push("Modo de reproducción", ::modeEntries) },
+                MenuEntry("Velocidad de reproducción", speedLabel(player.playbackParameters.speed)) {
+                    menu.push("Velocidad de reproducción", ::speedEntries)
+                },
+            )
+        }
+    }
+
+    private fun modeLabel(): String {
+        val quality = activeQuality
+        return when {
+            !transcoding -> "Direct play"
+            quality == Quality.ORIGINAL -> "Transcodificando · calidad original"
+            else -> "Transcodificando · ${quality.label}"
+        }
+    }
+
+    private fun modeEntries(): List<MenuEntry> = Quality.entries.map { quality ->
+        val label = if (quality == Quality.ORIGINAL) "Direct play (original)" else "Transcodificar · ${quality.label}"
+        MenuEntry(label, checked = quality == activeQuality) {
+            menu.close()
+            if (quality == activeQuality && transcoding == (quality != Quality.ORIGINAL)) return@MenuEntry
+            qualityOverride = quality
+            restartAtCurrentPosition(Attempt(currentAttempt.candidate, transcode = quality != Quality.ORIGINAL))
+        }
+    }
+
+    private fun speedEntries(): List<MenuEntry> = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f).map { speed ->
+        MenuEntry(speedLabel(speed), checked = speed == player.playbackParameters.speed) {
+            player.setPlaybackSpeed(speed)
+            menu.close()
+        }
+    }
+
+    private fun speedLabel(speed: Float): String = if (speed == 1f) "Normal" else "${speed.toString().removeSuffix(".0")}x"
+
+    private fun restartAtCurrentPosition(attempt: Attempt) {
+        val item = current ?: return
+        val position = player.currentPosition
+        report("stopped", force = true)
+        rotateSession()
+        load(item.ratingKey, fromStart = false, attempt = attempt, resumeAtMs = position)
     }
 
     private fun failOver(message: String, details: String?, positionMs: Long?) {
@@ -258,7 +392,7 @@ class PlayerActivity : ComponentActivity() {
     }
 
     private fun applyDefaultTrackPreferences(part: Part, transcode: Boolean) {
-        val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
+        val audio = activeAudioStream(part)
         val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .clearOverrides()
@@ -274,7 +408,7 @@ class PlayerActivity : ComponentActivity() {
         if (tracks.groups.isEmpty()) return
         pendingTrackPart = null
         val builder = player.trackSelectionParameters.buildUpon()
-        part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }?.let { stream ->
+        activeAudioStream(part)?.let { stream ->
             findTrack(tracks, C.TRACK_TYPE_AUDIO, stream)?.let { builder.setOverrideForType(it) }
         }
         part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }?.let { stream ->
@@ -390,7 +524,8 @@ class PlayerActivity : ComponentActivity() {
         rotateSession()
         player.stop()
         setHint(null, null)
-        load(next.ratingKey, fromStart = false)
+        audioOverride = null
+        load(next.ratingKey, fromStart = false, attempt = Attempt(0, transcode = qualityOverride != null && qualityOverride != Quality.ORIGINAL))
     }
 
     private fun rotateSession() {
@@ -513,6 +648,7 @@ class PlayerActivity : ComponentActivity() {
     }
 
     private fun showError(message: String, details: String?) {
+        if (menu.isVisible) menu.close()
         player.stop()
         setHint(null, null)
         playerView.hideController()
@@ -557,6 +693,10 @@ class PlayerActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (errorVisible) return super.dispatchKeyEvent(event)
+        if (menu.isVisible) {
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) return true
+            return super.dispatchKeyEvent(event)
+        }
         if (!released && !playerView.isControllerFullyVisible) {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {

@@ -110,6 +110,11 @@ class PlexServer(val saved: SavedServer, private val identity: PlexIdentity) {
         Http.fetch(request(url).build())
     }
 
+    suspend fun selectAudioStream(partId: Long, audioStreamId: Long) {
+        val url = url("/library/parts/$partId", "allParts" to "1", "audioStreamID" to audioStreamId.toString())
+        Http.fetch(request(url).put(ByteArray(0).toRequestBody()).build())
+    }
+
     suspend fun scrobble(ratingKey: String, watched: Boolean) {
         val path = if (watched) "/:/scrobble" else "/:/unscrobble"
         Http.fetch(request(url(path, "key" to ratingKey, "identifier" to "com.plexapp.plugins.library")).build())
