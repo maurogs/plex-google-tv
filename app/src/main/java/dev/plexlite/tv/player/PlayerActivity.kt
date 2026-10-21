@@ -44,6 +44,7 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.ui.R as Media3R
 import dev.plexlite.tv.R
 import dev.plexlite.tv.data.Quality
+import dev.plexlite.tv.ui.components.formatClock
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Http
 import dev.plexlite.tv.data.Metadata
@@ -65,6 +66,10 @@ class PlayerActivity : ComponentActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var titleView: TextView
     private lateinit var hintView: TextView
+    private lateinit var seekView: TextView
+    private var pendingSeekMs = 0L
+    private var seekBaseMs = 0L
+    private var seekJob: Job? = null
     private lateinit var errorPanel: LinearLayout
     private lateinit var errorMessage: TextView
     private lateinit var errorDetails: TextView
@@ -152,6 +157,7 @@ class PlayerActivity : ComponentActivity() {
         playerView = PlayerView(this).apply {
             player = this@PlayerActivity.player
             useController = true
+            controllerAutoShow = false
             controllerShowTimeoutMs = 8_000
             setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             setShowSubtitleButton(true)
@@ -191,6 +197,20 @@ class PlayerActivity : ComponentActivity() {
         )
 
         menu = OverlayMenu(this, root).apply { onClosed = ::onMenuClosed }
+        seekView = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(dp(36), dp(20), dp(36), dp(20))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(20).toFloat()
+                setColor(0xCC000000.toInt())
+            }
+            visibility = View.GONE
+        }
+        root.addView(seekView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+
         buildErrorPanel(root)
 
         setContentView(root)
@@ -356,6 +376,41 @@ class PlayerActivity : ComponentActivity() {
     }
 
     private fun speedLabel(speed: Float): String = if (speed == 1f) "Normal" else "${speed.toString().removeSuffix(".0")}x"
+
+    private fun accumulateSeek(deltaMs: Long) {
+        if (current == null || player.playbackState == Player.STATE_IDLE) return
+        if (pendingSeekMs == 0L) seekBaseMs = player.currentPosition
+        val duration = player.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+        val target = (seekBaseMs + pendingSeekMs + deltaMs).coerceIn(0L, duration)
+        pendingSeekMs = target - seekBaseMs
+        setHint(null, null)
+        seekView.text = buildString {
+            append(
+                when {
+                    pendingSeekMs < 0 -> "«  ${formatAmount(-pendingSeekMs)}"
+                    pendingSeekMs > 0 -> "${formatAmount(pendingSeekMs)}  »"
+                    else -> "0 s"
+                },
+            )
+            append("\n")
+            append(formatClock(target))
+            if (duration != Long.MAX_VALUE) append(" / ${formatClock(duration)}")
+        }
+        seekView.visibility = View.VISIBLE
+        seekJob?.cancel()
+        seekJob = lifecycleScope.launch {
+            delay(700)
+            if (pendingSeekMs != 0L) player.seekTo(target)
+            pendingSeekMs = 0L
+            delay(900)
+            seekView.visibility = View.GONE
+        }
+    }
+
+    private fun formatAmount(ms: Long): String {
+        val seconds = ms / 1000
+        return if (seconds < 60) "$seconds s" else "%d:%02d min".format(seconds / 60, seconds % 60)
+    }
 
     private fun restartAtCurrentPosition(attempt: Attempt) {
         val item = current ?: return
@@ -706,17 +761,9 @@ class PlayerActivity : ComponentActivity() {
                         return true
                     }
                 }
-                KeyEvent.KEYCODE_DPAD_LEFT -> {
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> {
                     if (event.action == KeyEvent.ACTION_DOWN) {
-                        player.seekBack()
-                        playerView.showController()
-                    }
-                    return true
-                }
-                KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                    if (event.action == KeyEvent.ACTION_DOWN) {
-                        player.seekForward()
-                        playerView.showController()
+                        accumulateSeek(if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -SEEK_STEP_MS else SEEK_STEP_MS)
                     }
                     return true
                 }
@@ -752,6 +799,7 @@ class PlayerActivity : ComponentActivity() {
 
     companion object {
         private const val ACCENT = 0xFFE5A00D.toInt()
+        private const val SEEK_STEP_MS = 10_000L
         private const val EXTRA_RATING_KEY = "rating_key"
         private const val EXTRA_FROM_START = "from_start"
 
