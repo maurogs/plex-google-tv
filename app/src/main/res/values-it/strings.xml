@@ -137,4 +137,9 @@
     <string name="search_space">Spazio</string>
     <string name="search_delete">Cancella</string>
     <string name="search_clear">Svuota</string>
+    <string name="detail_directed_by">Diretto da %1$s</string>
+    <string name="detail_cast">Cast e troupe</string>
+    <string name="detail_extras">Trailer e contenuti extra</string>
+    <string name="detail_trailer">Trailer</string>
+    <string name="detail_extra">Extra</string>
 </resources>

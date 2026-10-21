@@ -141,4 +141,9 @@
     <string name="search_space">Пробел</string>
     <string name="search_delete">Удалить</string>
     <string name="search_clear">Очистить</string>
+    <string name="detail_directed_by">Режиссёр: %1$s</string>
+    <string name="detail_cast">Актёры и съёмочная группа</string>
+    <string name="detail_extras">Трейлеры и дополнительные материалы</string>
+    <string name="detail_trailer">Трейлер</string>
+    <string name="detail_extra">Дополнительно</string>
 </resources>

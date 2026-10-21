@@ -92,6 +92,12 @@ data class Metadata(
     @SerialName("Marker") val markers: List<Marker> = emptyList(),
     @SerialName("Genre") val genres: List<Tag> = emptyList(),
     @SerialName("OnDeck") val onDeck: OnDeck? = null,
+    @SerialName("Rating") val ratings: List<RatingEntry> = emptyList(),
+    @SerialName("Director") val directors: List<Tag> = emptyList(),
+    @SerialName("Role") val roles: List<Role> = emptyList(),
+    @SerialName("Extras") val extras: OnDeck? = null,
+    @SerialName("Image") val images: List<ImageEntry> = emptyList(),
+    val subtype: String? = null,
 ) {
     val isWatched: Boolean
         get() = when (type) {
@@ -123,6 +129,15 @@ object MetadataListSerializer : JsonTransformingSerializer<List<Metadata>>(ListS
 
 @Serializable
 data class Tag(val tag: String = "")
+
+@Serializable
+data class Role(val tag: String = "", val role: String? = null, val thumb: String? = null)
+
+@Serializable
+data class RatingEntry(val image: String? = null, val value: Double? = null, val type: String? = null)
+
+@Serializable
+data class ImageEntry(val type: String? = null, val url: String? = null)
 
 @Serializable
 data class Marker(

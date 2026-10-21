@@ -135,4 +135,9 @@
     <string name="search_space">空格</string>
     <string name="search_delete">删除</string>
     <string name="search_clear">清空</string>
+    <string name="detail_directed_by">导演：%1$s</string>
+    <string name="detail_cast">演职人员</string>
+    <string name="detail_extras">预告片和花絮</string>
+    <string name="detail_trailer">预告片</string>
+    <string name="detail_extra">花絮</string>
 </resources>

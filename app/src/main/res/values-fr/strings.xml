@@ -137,4 +137,9 @@
     <string name="search_space">Espace</string>
     <string name="search_delete">Effacer</string>
     <string name="search_clear">Tout effacer</string>
+    <string name="detail_directed_by">Réalisé par %1$s</string>
+    <string name="detail_cast">Distribution et équipe</string>
+    <string name="detail_extras">Bandes-annonces et bonus</string>
+    <string name="detail_trailer">Bande-annonce</string>
+    <string name="detail_extra">Bonus</string>
 </resources>

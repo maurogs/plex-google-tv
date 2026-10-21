@@ -41,10 +41,11 @@ class PlexServer(val saved: SavedServer, private val identity: PlexIdentity) {
         return get("/library/sections/$sectionId/all", *params.toTypedArray())
     }
 
-    suspend fun metadata(ratingKey: String, checkFiles: Boolean = false): Metadata? =
+    suspend fun metadata(ratingKey: String, checkFiles: Boolean = false, extras: Boolean = false): Metadata? =
         get(
             "/library/metadata/$ratingKey",
             "checkFiles" to if (checkFiles) "1" else "0",
+            "includeExtras" to if (extras) "1" else "0",
             "includeChapters" to "1",
             "includeMarkers" to "1",
             "includeOnDeck" to "1",

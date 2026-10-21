@@ -137,4 +137,9 @@
     <string name="search_space">Leerzeichen</string>
     <string name="search_delete">Löschen</string>
     <string name="search_clear">Leeren</string>
+    <string name="detail_directed_by">Regie: %1$s</string>
+    <string name="detail_cast">Besetzung und Crew</string>
+    <string name="detail_extras">Trailer und Extras</string>
+    <string name="detail_trailer">Trailer</string>
+    <string name="detail_extra">Extra</string>
 </resources>

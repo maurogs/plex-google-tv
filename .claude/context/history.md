@@ -39,6 +39,11 @@ entry for every meaningful change so future sessions keep the thread.
     no longer re-triggers a click (KeyUp swallowed), eye button to hide/show; red "Sign out" at the bottom;
     clearer filter labels ("Mostrar solo películas no vistas" / "Mostrar todas las películas").
 19. **Organizer polish + filter flicker** — removed numbers, eye moved to the left, initial focus on the
-. **Search** — magnifier chip before "Inicio" in the library bar opens an on-screen keyboard (a–z, ñ, 0–9,
+    first library; the filter no longer clears the grid (results swap in place, focus stays on the button).
+20. **Search** — magnifier chip before "Inicio" in the library bar opens an on-screen keyboard (a–z, ñ, 0–9,
     space, delete, clear; physical keys also type) with debounced `/hubs/search` results grouped into movies,
     shows and episodes, filtered by hidden libraries. No voice search (owner's decision).
+21. **Richer detail page** — IMDb / Rotten Tomatoes / TMDB rating badges (from `Rating[]`), "Directed by",
+    pre-play chips for video quality, audio track and subtitle (dropdowns that persist the selection on the
+    server), cast & crew row with circular photos (`Role[]`), trailers & extras row (`includeExtras=1`,
+    plays like any item). Related movies intentionally omitted (owner's decision).

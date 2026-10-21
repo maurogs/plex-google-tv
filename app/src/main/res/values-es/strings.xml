@@ -137,4 +137,9 @@
     <string name="search_space">Espacio</string>
     <string name="search_delete">Borrar</string>
     <string name="search_clear">Limpiar</string>
+    <string name="detail_directed_by">Dirigida por %1$s</string>
+    <string name="detail_cast">Reparto y equipo</string>
+    <string name="detail_extras">Tráileres y contenido extra</string>
+    <string name="detail_trailer">Tráiler</string>
+    <string name="detail_extra">Extra</string>
 </resources>

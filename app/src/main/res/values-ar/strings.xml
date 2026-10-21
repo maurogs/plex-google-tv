@@ -145,4 +145,9 @@
     <string name="search_space">مسافة</string>
     <string name="search_delete">حذف</string>
     <string name="search_clear">مسح</string>
+    <string name="detail_directed_by">إخراج %1$s</string>
+    <string name="detail_cast">طاقم التمثيل والعمل</string>
+    <string name="detail_extras">إعلانات ومحتوى إضافي</string>
+    <string name="detail_trailer">إعلان</string>
+    <string name="detail_extra">محتوى إضافي</string>
 </resources>

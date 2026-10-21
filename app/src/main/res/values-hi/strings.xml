@@ -137,4 +137,9 @@
     <string name="search_space">स्पेस</string>
     <string name="search_delete">मिटाएँ</string>
     <string name="search_clear">साफ़ करें</string>
+    <string name="detail_directed_by">निर्देशक: %1$s</string>
+    <string name="detail_cast">कलाकार और टीम</string>
+    <string name="detail_extras">ट्रेलर और अतिरिक्त सामग्री</string>
+    <string name="detail_trailer">ट्रेलर</string>
+    <string name="detail_extra">अतिरिक्त</string>
 </resources>

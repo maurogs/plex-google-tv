@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -45,6 +46,8 @@ import coil3.compose.AsyncImage
 import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Metadata
+import dev.plexlite.tv.data.Part
+import dev.plexlite.tv.data.Stream
 import dev.plexlite.tv.ui.components.CardStyle
 import dev.plexlite.tv.ui.components.CenteredMessage
 import dev.plexlite.tv.ui.components.MediaCard
@@ -70,7 +73,7 @@ class DetailViewModel(savedState: SavedStateHandle) : ViewModel() {
     fun refresh() {
         viewModelScope.launch {
             val server = AppGraph.requireServer()
-            runCatching { server.metadata(ratingKey) }
+            runCatching { server.metadata(ratingKey, extras = true) }
                 .onSuccess { loaded ->
                     item = loaded
                     if (loaded?.type == "show") loadSeasons(loaded)
@@ -92,6 +95,20 @@ class DetailViewModel(savedState: SavedStateHandle) : ViewModel() {
         selectedSeason = seasonKey
         viewModelScope.launch {
             episodes = runCatching { AppGraph.requireServer().children(seasonKey) }.getOrDefault(emptyList())
+        }
+    }
+
+    fun selectAudio(part: Part, stream: Stream) {
+        viewModelScope.launch {
+            runCatching { AppGraph.requireServer().selectAudioStream(part.id, stream.id) }
+            refresh()
+        }
+    }
+
+    fun selectSubtitle(part: Part, stream: Stream?) {
+        viewModelScope.launch {
+            runCatching { AppGraph.requireServer().selectSubtitleStream(part.id, stream?.id ?: 0L) }
+            refresh()
         }
     }
 
@@ -146,13 +163,27 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "info") {
-                Column(Modifier.padding(horizontal = 48.dp).fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.padding(horizontal = 48.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(item.title, style = MaterialTheme.typography.displaySmall, color = Color.White, fontWeight = FontWeight.Bold)
                     Text(metaLine(item), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    RatingsRow(item)
                     item.summary?.takeIf { it.isNotBlank() }?.let {
                         Text(it, style = MaterialTheme.typography.bodyLarge, color = Color.White, maxLines = 5, overflow = TextOverflow.Ellipsis)
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    item.directors.takeIf { it.isNotEmpty() }?.let { directors ->
+                        Text(
+                            stringResource(R.string.detail_directed_by, directors.take(2).joinToString(", ") { it.tag }),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
                         if (playTarget != null) {
                             val resume = playTarget.viewOffset?.takeIf { it > 0 }
                             val playLabel = stringResource(if (resume != null) R.string.detail_resume else R.string.detail_play)
@@ -168,6 +199,10 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                         }
                         OutlinedButton(onClick = vm::toggleWatched) {
                             Text(stringResource(if (item.isWatched) R.string.detail_mark_unwatched else R.string.detail_mark_watched))
+                        }
+                        if (item.type == "movie") {
+                            Spacer(Modifier.weight(1f))
+                            StreamChips(item, onSelectAudio = vm::selectAudio, onSelectSubtitle = vm::selectSubtitle)
                         }
                     }
                 }
@@ -204,6 +239,8 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                     }
                 }
             }
+            item(key = "cast") { CastRow(item.roles) }
+            item(key = "extras") { ExtrasRow(item.extras?.metadata.orEmpty()) { onPlay(it, true) } }
         }
     }
 
@@ -217,13 +254,6 @@ private fun metaLine(item: Metadata): String = listOfNotNull(
     item.contentRating,
     item.duration?.takeIf { item.type == "movie" }?.let { formatDuration(it) },
     item.childCount?.takeIf { item.type == "show" }?.let { AppGraph.plural(R.plurals.detail_seasons, it) },
-    item.audienceRating?.let { "★ %.1f".format(it) },
-    item.media.firstOrNull()?.let { media ->
-        listOfNotNull(
-            media.videoResolution?.let { if (it.all(Char::isDigit)) "${it}p" else it.uppercase() },
-            media.videoDynamicRange?.takeIf { it != "SDR" },
-            media.audioCodec?.uppercase(),
-        ).joinToString(" ").ifEmpty { null }
-    },
+    item.media.firstOrNull()?.videoDynamicRange?.takeIf { item.type == "movie" && it != "SDR" },
     item.genres.take(3).joinToString(", ") { it.tag }.ifEmpty { null },
 ).joinToString("  ·  ")
