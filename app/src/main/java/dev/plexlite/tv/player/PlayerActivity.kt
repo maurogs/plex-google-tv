@@ -9,6 +9,11 @@ import android.graphics.drawable.StateListDrawable
 import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -199,13 +204,14 @@ class PlayerActivity : ComponentActivity() {
         menu = OverlayMenu(this, root).apply { onClosed = ::onMenuClosed }
         seekView = TextView(this).apply {
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            setPadding(dp(36), dp(20), dp(36), dp(20))
+            setLineSpacing(dp(2).toFloat(), 1f)
+            setPadding(dp(22), dp(12), dp(22), dp(12))
             background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
-                setColor(0xCC000000.toInt())
+                cornerRadius = dp(16).toFloat()
+                setColor(0x80000000.toInt())
             }
             visibility = View.GONE
         }
@@ -384,17 +390,18 @@ class PlayerActivity : ComponentActivity() {
         val target = (seekBaseMs + pendingSeekMs + deltaMs).coerceIn(0L, duration)
         pendingSeekMs = target - seekBaseMs
         setHint(null, null)
-        seekView.text = buildString {
-            append(
-                when {
-                    pendingSeekMs < 0 -> "«  ${formatAmount(-pendingSeekMs)}"
-                    pendingSeekMs > 0 -> "${formatAmount(pendingSeekMs)}  »"
-                    else -> "0 s"
-                },
-            )
-            append("\n")
-            append(formatClock(target))
-            if (duration != Long.MAX_VALUE) append(" / ${formatClock(duration)}")
+        val amount = when {
+            pendingSeekMs < 0 -> "«  ${formatAmount(-pendingSeekMs)}"
+            pendingSeekMs > 0 -> "${formatAmount(pendingSeekMs)}  »"
+            else -> "0 s"
+        }
+        val destination = formatClock(target) + if (duration != Long.MAX_VALUE) " / ${formatClock(duration)}" else ""
+        seekView.text = SpannableStringBuilder(amount).append("\n").apply {
+            val start = length
+            append(destination)
+            setSpan(RelativeSizeSpan(0.65f), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(ForegroundColorSpan(0xFFB8BCC6.toInt()), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(StyleSpan(Typeface.NORMAL), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         seekView.visibility = View.VISIBLE
         seekJob?.cancel()
