@@ -229,7 +229,12 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
         if (tab == LibraryTab.RECOMMENDED) vm.loadRecommended()
         onPauseOrDispose { }
     }
+    // Back from the content reveals the bar (focused on this library); Back from the bar returns Home.
     BackHandler(enabled = !vm.barVisible) { vm.barVisible = true }
+    BackHandler(enabled = vm.barVisible) {
+        AppGraph.focusHomeChip = true
+        actions.onHome()
+    }
     when (tab) {
         LibraryTab.RECOMMENDED -> RecommendedTab(onOpenItem, actions, vm)
         LibraryTab.BROWSE -> BrowseTab(onOpenItem, actions, vm)

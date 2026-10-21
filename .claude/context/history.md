@@ -93,3 +93,8 @@ entry for every meaningful change so future sessions keep the thread.
     the detail page) and scrolls the current library into view when it appears. The search icon moved out of the
     scrolling row: fixed next to the user menu, followed by a thin divider (owner's choice among: next to the
     user, far right, inside the user menu).
+31. **Soft edges in the library bar + Back focuses "Home"** — hiding chips that don't fit was tried and reverted
+    (owner disliked the gaps). Instead the chips row fades out over 56 dp on the side that has more content
+    (offscreen layer + `DstIn` gradient), and the minimal-scroll margin keeps the focused chip out of the fade.
+    Back inside a library: from the content it reveals the bar focused on the current library; from the bar it
+    returns Home with focus on the "Home" chip (`AppGraph.focusHomeChip`), not on the first card.

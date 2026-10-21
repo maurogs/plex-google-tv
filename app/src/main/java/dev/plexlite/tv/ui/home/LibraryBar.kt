@@ -13,7 +13,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import dev.plexlite.tv.ui.components.MinimalBringIntoView
@@ -53,12 +60,19 @@ data class HeaderActions(
 /** [focusSelected] moves focus to the selected chip when the bar enters the composition. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LibraryBar(selectedKey: String?, actions: HeaderActions, modifier: Modifier = Modifier, focusSelected: Boolean = false) {
+fun LibraryBar(
+    selectedKey: String?,
+    actions: HeaderActions,
+    modifier: Modifier = Modifier,
+    focusSelected: Boolean = false,
+) {
     val sections = AppGraph.libraryLayout.visible(AppGraph.sections)
     val listState = rememberLazyListState()
     val selectedFocus = remember { FocusRequester() }
     val edge = 8.dp
-    val scrollSpec = with(LocalDensity.current) { remember { MinimalBringIntoView(edge.toPx()) } }
+    val fade = 56.dp
+    // The focused chip is kept out of the faded edges.
+    val scrollSpec = with(LocalDensity.current) { remember { MinimalBringIntoView(fade.toPx()) } }
     fun Modifier.selectedFocus(selected: Boolean) = if (selected) focusRequester(selectedFocus) else this
     Row(modifier = modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
         ServerMenuButton(actions = actions)
@@ -72,7 +86,7 @@ fun LibraryBar(selectedKey: String?, actions: HeaderActions, modifier: Modifier 
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = edge),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).fadingEdges(listState, fade),
             ) {
                 item(key = "home") {
                     LibraryChip(
@@ -105,6 +119,26 @@ fun LibraryBar(selectedKey: String?, actions: HeaderActions, modifier: Modifier 
         }
     }
 }
+
+/** Fades out the start/end edge of a horizontal list when there is more content to scroll to on that side. */
+private fun Modifier.fadingEdges(state: LazyListState, width: Dp): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val fadePx = width.toPx().coerceAtMost(size.width / 2)
+        if (state.canScrollBackward) {
+            drawRect(
+                brush = Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fadePx),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+        if (state.canScrollForward) {
+            drawRect(
+                brush = Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fadePx, endX = size.width),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+    }
 
 @Composable
 private fun SearchChip(onClick: () -> Unit) {

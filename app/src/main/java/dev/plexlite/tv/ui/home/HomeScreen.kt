@@ -144,7 +144,8 @@ private fun HomeContentView(
         if (content.continueWatching.isNotEmpty()) add(FeedRow("cw", continueWatching, content.continueWatching, CardStyle.WIDE))
         AppGraph.libraryLayout.arrangeHubs(content.hubs, AppGraph.sections).forEach { add(it.toFeedRow()) }
     }
-    HubFeed(rows = rows, focus = vm.feedFocus, onOpenItem = onOpenItem) {
-        LibraryBar(selectedKey = null, actions = actions)
+    val focusHomeChip = remember { AppGraph.focusHomeChip.also { AppGraph.focusHomeChip = false } }
+    HubFeed(rows = rows, focus = vm.feedFocus, onOpenItem = onOpenItem, focusFirstCard = !focusHomeChip) {
+        LibraryBar(selectedKey = null, actions = actions, focusSelected = focusHomeChip)
     }
 }

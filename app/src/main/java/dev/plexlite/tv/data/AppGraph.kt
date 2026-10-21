@@ -37,6 +37,8 @@ object AppGraph {
     var homeUserCount by mutableStateOf<Int?>(null)
     var sections by mutableStateOf<List<Directory>>(emptyList())
     var libraryTab by mutableStateOf(LibraryTab.RECOMMENDED)
+    /** Set by Back from a library's bar so Home opens with focus on its "Home" chip. */
+    var focusHomeChip = false
     var libraryLayout by mutableStateOf(LibraryLayout())
         private set
 
