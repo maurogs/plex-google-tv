@@ -86,7 +86,8 @@ hints use the OK button.
 - The header dropdown shows the current user (avatar + name, max 260 dp with ellipsis; server name as fallback):
   Switch user (only if >1 Home user), Change server (only if >1 server, shows the current server), App language,
   Organize libraries, Settings.
-- Library bar: fixed "Inicio" first, then libraries in the user's order; it also appears inside libraries.
+- Library bar: user menu, fixed search icon, divider, then a scrolling row with "Inicio" first and the libraries in the
+  user's order. The row scrolls minimally (never leaves chips half hidden).
 - Each library has two tabs: "Recommended" (default; the server's section hubs, Continue watching first) and
   "Library" (full grid, filter, sort, A–Z). The tab is remembered for the session across libraries, not persisted.
   "Categories" was declined.

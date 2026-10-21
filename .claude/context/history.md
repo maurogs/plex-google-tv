@@ -87,3 +87,9 @@ entry for every meaningful change so future sessions keep the thread.
     tabs are now text tabs with an accent underline (soft highlight on focus), and the unwatched filter and sort
     use a compact rectangular `ToolbarChip` with icons (shared with the detail page's audio/subtitle chips);
     the title count moved next to them.
+30. **Library bar scrolling fix + fixed search icon** — the chips row used Compose for TV's default pivot, so
+    after moving right "Inicio" and the search chip stayed half hidden under the user menu (also after Back).
+    The row now uses a minimal-scroll `BringIntoViewSpec` (`ui/components/MinimalBringIntoView.kt`, also used by
+    the detail page) and scrolls the current library into view when it appears. The search icon moved out of the
+    scrolling row: fixed next to the user menu, followed by a thin divider (owner's choice among: next to the
+    user, far right, inside the user menu).

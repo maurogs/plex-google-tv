@@ -61,6 +61,7 @@ import dev.plexlite.tv.ui.home.DebouncedHero
 import dev.plexlite.tv.ui.components.formatClock
 import dev.plexlite.tv.ui.components.formatDuration
 import dev.plexlite.tv.ui.theme.Accent
+import dev.plexlite.tv.ui.components.MinimalBringIntoView
 import dev.plexlite.tv.ui.theme.Background
 import kotlinx.coroutines.launch
 
@@ -308,17 +309,7 @@ private fun EpisodeInfo(source: State<Metadata?>, fallback: Metadata?) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-private val MinimalScroll = object : BringIntoViewSpec {
-    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-        val trailing = offset + size
-        return when {
-            offset >= 0f && trailing <= containerSize -> 0f
-            offset < 0f || size > containerSize -> offset
-            else -> trailing - containerSize
-        }
-    }
-}
+private val MinimalScroll = MinimalBringIntoView()
 
 private fun metaLine(item: Metadata): String = listOfNotNull(
     item.year?.toString(),
