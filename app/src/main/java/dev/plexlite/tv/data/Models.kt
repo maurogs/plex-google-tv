@@ -105,6 +105,13 @@ data class Metadata(
             else -> (viewCount ?: 0) > 0
         }
 
+    val unwatchedLeaves: Int?
+        get() {
+            if (type != "show" && type != "season") return null
+            val total = leafCount ?: return null
+            return (total - (viewedLeafCount ?: 0)).takeIf { it > 0 }
+        }
+
     val progress: Float?
         get() {
             val offset = viewOffset ?: return null

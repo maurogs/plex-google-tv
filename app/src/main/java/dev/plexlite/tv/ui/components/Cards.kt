@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -121,14 +122,29 @@ fun MediaCard(
                         )
                     }
                 }
-                if (item.isWatched && item.progress == null) {
-                    Box(
+                val unwatched = item.unwatchedLeaves
+                when {
+                    item.isWatched && item.progress == null -> Box(
                         Modifier
                             .align(Alignment.TopEnd)
-                            .padding(6.dp)
-                            .size(12.dp)
+                            .padding(8.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
-                            .background(Accent),
+                            .background(Color.Black.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("✓", color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    }
+                    unwatched != null -> Text(
+                        unwatched.toString(),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
             }

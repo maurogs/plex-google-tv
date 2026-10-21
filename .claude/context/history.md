@@ -47,3 +47,5 @@ entry for every meaningful change so future sessions keep the thread.
     pre-play chips for video quality, audio track and subtitle (dropdowns that persist the selection on the
     server), cast & crew row with circular photos (`Role[]`), trailers & extras row (`includeExtras=1`,
     plays like any item). Related movies intentionally omitted (owner's decision).
+22. **Card badges** — ✓ in a dark circle for watched items (replaces the orange dot) and an unwatched
+    episode count pill on shows/seasons (`leafCount - viewedLeafCount`), matching the official app.
