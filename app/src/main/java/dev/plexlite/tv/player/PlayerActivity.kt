@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -25,6 +26,7 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -102,7 +104,9 @@ class PlayerActivity : ComponentActivity() {
             .setPrioritizeTimeOverSizeThresholds(false)
             .build()
         val httpFactory = OkHttpDataSource.Factory(Http.client)
-            .setDefaultRequestProperties(AppGraph.identity.headers.mapValues { (_, v) -> v.filter { it.code in 32..126 } })
+            .setDefaultRequestProperties(
+                AppGraph.identity.headers.mapValues { (_, v) -> v.filter { it.code in 32..126 } } + ("X-Plex-Token" to server.saved.token),
+            )
         val extractors = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
         val mediaSourceFactory = DefaultMediaSourceFactory(DefaultDataSource.Factory(this, httpFactory), extractors)
         return ExoPlayer.Builder(this, renderers)
@@ -201,6 +205,7 @@ class PlayerActivity : ComponentActivity() {
             applyDefaultTrackPreferences(plan.part, plan.transcode)
 
             val startMs = resumeAtMs ?: if (fromStart) 0L else item.viewOffset ?: 0L
+            Log.i(StreamResolver.TAG, "Playing rk=$ratingKey transcode=${plan.transcode} startMs=$startMs url=${plan.mediaItem.localConfiguration?.uri?.toString()?.replace(Regex("X-Plex-Token=[^&]+"), "X-Plex-Token=REDACTED")?.take(400)}")
             player.setMediaItem(plan.mediaItem, startMs)
             player.prepare()
             player.playWhenReady = true
@@ -291,6 +296,7 @@ class PlayerActivity : ComponentActivity() {
         }
 
         override fun onPlayerError(error: PlaybackException) {
+            logError(error)
             val item = current ?: return
             if (!transcoding) {
                 val position = player.currentPosition
@@ -378,6 +384,18 @@ class PlayerActivity : ComponentActivity() {
         val reported = if (queueItem?.playQueueItemID != null) item.copy(playQueueItemID = queueItem.playQueueItemID) else item
         val pq = queueId
         AppGraph.appScope.launch { runCatching { server.timeline(reported, state, position, duration, session, pq) } }
+    }
+
+    private fun logError(error: PlaybackException) {
+        Log.e(StreamResolver.TAG, "Playback error transcoding=$transcoding code=${error.errorCodeName}", error)
+        var cause: Throwable? = error
+        while (cause != null) {
+            if (cause is HttpDataSource.InvalidResponseCodeException) {
+                val url = cause.dataSpec.uri.toString().replace(Regex("X-Plex-Token=[^&]+"), "X-Plex-Token=REDACTED")
+                Log.e(StreamResolver.TAG, "HTTP ${cause.responseCode} for $url body=${String(cause.responseBody).take(300)}")
+            }
+            cause = cause.cause
+        }
     }
 
     private fun showError(message: String) {

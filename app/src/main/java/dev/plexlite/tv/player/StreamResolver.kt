@@ -1,6 +1,7 @@
 package dev.plexlite.tv.player
 
 import android.net.Uri
+import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -55,6 +56,8 @@ class StreamResolver(private val server: PlexServer) {
             )
             val decision = runCatching { server.decision(directParams, sessionId) }
             val partDecision = decision.getOrNull()?.metadata?.firstOrNull()?.media?.firstOrNull()?.parts?.firstOrNull()?.decision
+            val container = decision.getOrNull()
+            Log.i(TAG, "MDE decision rk=${item.ratingKey} part=$partDecision general=${container?.generalDecisionCode} ${container?.generalDecisionText} transcode=${container?.transcodeDecisionCode} ${container?.transcodeDecisionText} error=${decision.exceptionOrNull()?.message}")
             if (partDecision == "directplay" || (decision.isFailure && effectiveQuality == Quality.ORIGINAL)) {
                 val mediaItem = MediaItem.Builder()
                     .setUri(server.partUrl(part.key, sessionId))
@@ -80,7 +83,8 @@ class StreamResolver(private val server: PlexServer) {
                 add("subtitleStreamID" to "0")
             }
         }
-        server.decision(transcodeParams, sessionId)
+        val transcodeDecision = server.decision(transcodeParams, sessionId)
+        Log.i(TAG, "Transcode decision rk=${item.ratingKey} general=${transcodeDecision.generalDecisionCode} ${transcodeDecision.generalDecisionText} transcode=${transcodeDecision.transcodeDecisionCode} ${transcodeDecision.transcodeDecisionText}")
         val mediaItem = MediaItem.Builder()
             .setUri(server.transcodeUrl(transcodeParams))
             .setMimeType(MimeTypes.APPLICATION_M3U8)
@@ -110,6 +114,8 @@ class StreamResolver(private val server: PlexServer) {
             }
 
     companion object {
+        const val TAG = "PlexLite"
+
         fun sidecarId(stream: Stream) = "plex-${stream.id}"
     }
 }
