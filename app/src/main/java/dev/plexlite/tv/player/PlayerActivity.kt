@@ -3,6 +3,7 @@ package dev.plexlite.tv.player
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.graphics.Typeface
@@ -15,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -36,6 +38,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Http
@@ -137,7 +140,7 @@ class PlayerActivity : ComponentActivity() {
         playerView = PlayerView(this).apply {
             player = this@PlayerActivity.player
             useController = true
-            controllerShowTimeoutMs = 4_000
+            controllerShowTimeoutMs = 8_000
             setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             setShowSubtitleButton(true)
             setShowNextButton(false)
@@ -178,6 +181,7 @@ class PlayerActivity : ComponentActivity() {
         buildErrorPanel(root)
 
         setContentView(root)
+        styleControllerFocus(playerView)
     }
 
     private fun load(ratingKey: String, fromStart: Boolean, attempt: Attempt = Attempt(0, false), resumeAtMs: Long? = null) {
@@ -483,6 +487,26 @@ class PlayerActivity : ComponentActivity() {
         root.addView(errorPanel, FrameLayout.LayoutParams(dp(640), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
     }
 
+    private fun styleControllerFocus(view: View) {
+        when (view) {
+            is DefaultTimeBar -> view.setOnFocusChangeListener { _, hasFocus ->
+                view.setPlayedColor(if (hasFocus) ACCENT else Color.WHITE)
+                view.setScrubberColor(if (hasFocus) ACCENT else Color.WHITE)
+            }
+            is ImageView -> if (view.isFocusable) {
+                view.background = StateListDrawable().apply {
+                    addState(intArrayOf(android.R.attr.state_focused), GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(0x55E5A00D)
+                        setStroke(dp(3), ACCENT)
+                    })
+                    addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
+                }
+            }
+            is ViewGroup -> for (i in 0 until view.childCount) styleControllerFocus(view.getChildAt(i))
+        }
+    }
+
     private fun pill(color: Int) = GradientDrawable().apply {
         cornerRadius = dp(28).toFloat()
         setColor(color)
@@ -587,6 +611,7 @@ class PlayerActivity : ComponentActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        private const val ACCENT = 0xFFE5A00D.toInt()
         private const val EXTRA_RATING_KEY = "rating_key"
         private const val EXTRA_FROM_START = "from_start"
 
