@@ -1,7 +1,9 @@
 package dev.plexlite.tv.data
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.core.content.edit
+import dev.plexlite.tv.R
 import java.util.UUID
 
 data class SavedServer(
@@ -12,14 +14,32 @@ data class SavedServer(
     val relay: Boolean,
 )
 
-enum class Quality(val label: String, val maxKbps: Int?, val resolution: String?) {
-    ORIGINAL("Original (direct play)", null, null),
-    MBPS_40("40 Mbps · 4K", 40_000, "3840x2160"),
-    MBPS_20("20 Mbps · 1080p", 20_000, "1920x1080"),
-    MBPS_12("12 Mbps · 1080p", 12_000, "1920x1080"),
-    MBPS_8("8 Mbps · 1080p", 8_000, "1920x1080"),
-    MBPS_4("4 Mbps · 720p", 4_000, "1280x720"),
-    MBPS_2("2 Mbps · 720p", 2_000, "1280x720"),
+enum class Quality(val maxKbps: Int?, val resolution: String?) {
+    ORIGINAL(null, null),
+    MBPS_40(40_000, "3840x2160"),
+    MBPS_20(20_000, "1920x1080"),
+    MBPS_12(12_000, "1920x1080"),
+    MBPS_8(8_000, "1920x1080"),
+    MBPS_4(4_000, "1280x720"),
+    MBPS_2(2_000, "1280x720"),
+    ;
+
+    val label: String
+        get() {
+            val kbps = maxKbps ?: return AppGraph.str(R.string.quality_original)
+            val height = resolution?.substringAfter('x')
+            return "${kbps / 1000} Mbps · ${if (height == "2160") "4K" else "${height}p"}"
+        }
+}
+
+enum class SubtitleSize(@StringRes private val labelRes: Int, val scale: Float) {
+    SMALL(R.string.subtitle_size_small, 0.75f),
+    NORMAL(R.string.subtitle_size_normal, 1f),
+    LARGE(R.string.subtitle_size_large, 1.3f),
+    XLARGE(R.string.subtitle_size_xlarge, 1.6f),
+    ;
+
+    val label: String get() = AppGraph.str(labelRes)
 }
 
 class Prefs(context: Context) {
@@ -68,6 +88,14 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(KEY_AUTOPLAY_NEXT, true)
         set(value) = prefs.edit { putBoolean(KEY_AUTOPLAY_NEXT, value) }
 
+    var language: String?
+        get() = prefs.getString(KEY_LANGUAGE, null)
+        set(value) = prefs.edit { putString(KEY_LANGUAGE, value) }
+
+    var subtitleSize: SubtitleSize
+        get() = prefs.getString(KEY_SUBTITLE_SIZE, null)?.let { name -> SubtitleSize.entries.firstOrNull { it.name == name } } ?: SubtitleSize.NORMAL
+        set(value) = prefs.edit { putString(KEY_SUBTITLE_SIZE, value.name) }
+
     private companion object {
         const val KEY_CLIENT_ID = "client_id"
         const val KEY_AUTH_TOKEN = "auth_token"
@@ -78,5 +106,7 @@ class Prefs(context: Context) {
         const val KEY_SERVER_RELAY = "server_relay"
         const val KEY_QUALITY = "quality"
         const val KEY_AUTOPLAY_NEXT = "autoplay_next"
+        const val KEY_SUBTITLE_SIZE = "subtitle_size"
+        const val KEY_LANGUAGE = "language"
     }
 }

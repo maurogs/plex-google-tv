@@ -76,6 +76,13 @@ class OverlayMenu(private val context: Context, root: FrameLayout) {
         return true
     }
 
+    fun refresh() {
+        if (!isVisible) return
+        val focused = rows.indexOfChild(rows.focusedChild)
+        render()
+        if (focused >= 0) rows.getChildAt(focused.coerceAtMost(rows.childCount - 1))?.requestFocus()
+    }
+
     fun close() {
         stack.clear()
         panel.visibility = View.GONE

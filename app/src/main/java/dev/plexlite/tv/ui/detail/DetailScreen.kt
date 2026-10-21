@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.ui.components.CardStyle
@@ -73,7 +75,7 @@ class DetailViewModel(savedState: SavedStateHandle) : ViewModel() {
                     item = loaded
                     if (loaded?.type == "show") loadSeasons(loaded)
                 }
-                .onFailure { if (item == null) error = "No se pudo cargar: ${it.message}" }
+                .onFailure { if (item == null) error = AppGraph.str(R.string.detail_error, it.message.orEmpty()) }
         }
     }
 
@@ -113,7 +115,7 @@ fun DetailScreen(onPlay: (Metadata, Boolean) -> Unit, vm: DetailViewModel = view
     when {
         item != null -> DetailContent(item, vm, onPlay)
         vm.error != null -> CenteredMessage(vm.error!!)
-        else -> CenteredMessage("Cargando…")
+        else -> CenteredMessage(stringResource(R.string.loading))
     }
 }
 
@@ -153,18 +155,19 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
                         if (playTarget != null) {
                             val resume = playTarget.viewOffset?.takeIf { it > 0 }
+                            val playLabel = stringResource(if (resume != null) R.string.detail_resume else R.string.detail_play)
                             val label = buildString {
-                                append(if (resume != null) "Reanudar" else "Reproducir")
+                                append(playLabel)
                                 if (isShow) playTarget.episodeLabel?.let { append(" $it") }
                                 if (resume != null) append(" (${formatClock(resume)})")
                             }
                             Button(onClick = { onPlay(playTarget, false) }, modifier = Modifier.focusRequester(playFocus)) { Text(label) }
                             if (resume != null) {
-                                OutlinedButton(onClick = { onPlay(playTarget, true) }) { Text("Desde el principio") }
+                                OutlinedButton(onClick = { onPlay(playTarget, true) }) { Text(stringResource(R.string.detail_from_start)) }
                             }
                         }
                         OutlinedButton(onClick = vm::toggleWatched) {
-                            Text(if (item.isWatched) "Marcar como no visto" else "Marcar como visto")
+                            Text(stringResource(if (item.isWatched) R.string.detail_mark_unwatched else R.string.detail_mark_watched))
                         }
                     }
                 }
@@ -213,7 +216,7 @@ private fun metaLine(item: Metadata): String = listOfNotNull(
     item.year?.toString(),
     item.contentRating,
     item.duration?.takeIf { item.type == "movie" }?.let { formatDuration(it) },
-    item.childCount?.takeIf { item.type == "show" }?.let { if (it == 1) "1 temporada" else "$it temporadas" },
+    item.childCount?.takeIf { item.type == "show" }?.let { AppGraph.plural(R.plurals.detail_seasons, it) },
     item.audienceRating?.let { "★ %.1f".format(it) },
     item.media.firstOrNull()?.let { media ->
         listOfNotNull(

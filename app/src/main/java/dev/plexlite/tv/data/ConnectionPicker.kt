@@ -1,14 +1,25 @@
 package dev.plexlite.tv.data
 
+import android.util.Log
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.ConnectionPool
+import okhttp3.Dispatcher
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
+private const val TAG = "PlexLite"
+
 class ConnectionPicker(private val identity: PlexIdentity) {
+
+    private val probeClient = Http.client.newBuilder()
+        .dispatcher(Dispatcher())
+        .connectionPool(ConnectionPool())
+        .retryOnConnectionFailure(false)
+        .build()
 
     suspend fun pick(resource: Resource): SavedServer? {
         val token = resource.accessToken ?: return null
@@ -20,6 +31,7 @@ class ConnectionPicker(private val identity: PlexIdentity) {
                     .thenBy { if (it.protocol == "https") 0 else 1 }
                     .thenBy { if (it.ipv6) 1 else 0 },
             )
+        resource.connections.forEach { Log.i(TAG, "Connection ${it.uri} local=${it.local} relay=${it.relay} usable=${it in usable}") }
         val direct = usable.filter { !it.relay }
         val relay = usable.filter { it.relay }
         val winner = race(direct, resource.clientIdentifier, token) ?: race(relay, resource.clientIdentifier, token)
@@ -42,7 +54,7 @@ class ConnectionPicker(private val identity: PlexIdentity) {
             val answers = Channel<Int>(Channel.UNLIMITED)
             val probes = candidates.mapIndexed { rank, connection ->
                 launch {
-                    val timeout = if (connection.local) 5L else 10L
+                    val timeout = if (connection.local) 5L else 15L
                     if (probe(connection.uri, machineId, token, timeout)) answers.send(rank)
                 }
             }
@@ -65,14 +77,13 @@ class ConnectionPicker(private val identity: PlexIdentity) {
     }
 
     private suspend fun probe(uri: String, machineId: String, token: String, timeoutSeconds: Long): Boolean {
-        val client = Http.client.newBuilder()
+        val client = probeClient.newBuilder()
             .callTimeout(timeoutSeconds, TimeUnit.SECONDS)
             .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(false)
             .build()
         val request = identity.apply(Request.Builder().url("${uri.trimEnd('/')}/identity"), token).build()
-        return runCatching {
-            Http.fetchJson<Envelope>(request, client).container.machineIdentifier == machineId
-        }.getOrDefault(false)
+        val result = runCatching { Http.fetchJson<Envelope>(request, client).container.machineIdentifier }
+        Log.i(TAG, "Probe $uri -> ${result.getOrNull() ?: result.exceptionOrNull()?.let { "${it.javaClass.simpleName}: ${it.message}" }} (expected $machineId)")
+        return result.getOrNull() == machineId
     }
 }

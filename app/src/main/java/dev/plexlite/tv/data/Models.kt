@@ -1,5 +1,6 @@
 package dev.plexlite.tv.data
 
+import dev.plexlite.tv.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -25,6 +26,7 @@ data class MediaContainer(
     @SerialName("Metadata") val metadata: List<Metadata> = emptyList(),
     @SerialName("Hub") val hubs: List<Hub> = emptyList(),
     @SerialName("Directory") val directories: List<Directory> = emptyList(),
+    @SerialName("Stream") val streams: List<Stream> = emptyList(),
 )
 
 @Serializable
@@ -97,7 +99,7 @@ data class Metadata(
         }
 
     val episodeLabel: String?
-        get() = if (parentIndex != null && index != null) "T$parentIndex · E$index" else null
+        get() = if (parentIndex != null && index != null) AppGraph.str(R.string.episode_label, parentIndex, index) else null
 }
 
 @Serializable
@@ -162,6 +164,9 @@ data class Stream(
     val language: String? = null,
     val languageCode: String? = null,
     val displayTitle: String? = null,
+    val extendedDisplayTitle: String? = null,
+    val providerTitle: String? = null,
+    val score: String? = null,
     val selected: Boolean = false,
     val forced: Boolean = false,
     val default: Boolean = false,

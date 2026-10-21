@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="loading">Загрузка…</string>
+    <string name="retry">Повторить</string>
+    <string name="settings">Настройки</string>
+    <string name="ok">OK</string>
+    <string name="none">Нет</string>
+    <string name="no_server">Нет сервера</string>
+
+    <string name="login_go_to">На телефоне или компьютере откройте</string>
+    <string name="login_enter_code">и введите этот код:</string>
+    <string name="login_choose_server">Выберите сервер</string>
+    <string name="login_server_owned">Ваш</string>
+    <string name="login_server_shared">Общий</string>
+    <string name="login_server_offline">не в сети</string>
+    <string name="login_server_current">Текущий</string>
+    <string name="login_connecting">Подключение к %1$s…</string>
+    <string name="login_error_plex_tv">Не удалось связаться с plex.tv: %1$s</string>
+    <string name="login_error_servers">Не удалось получить список серверов: %1$s</string>
+    <string name="login_error_no_servers">В вашем аккаунте нет доступных серверов Plex.</string>
+    <string name="login_error_connect">Не удалось подключиться к %1$s. Он включён и доступен извне?</string>
+
+    <string name="home_error_connect">Не удалось подключиться к серверу: %1$s</string>
+    <string name="home_continue_watching">Продолжить просмотр</string>
+    <string name="menu_change_server">Сменить сервер</string>
+    <string name="menu_app_language">Язык приложения</string>
+    <string name="menu_system_language">Язык системы</string>
+
+    <string name="library_error">Ошибка загрузки медиатеки: %1$s</string>
+    <plurals name="library_count">
+        <item quantity="one">%d название</item>
+        <item quantity="few">%d названия</item>
+        <item quantity="many">%d названий</item>
+        <item quantity="other">%d названия</item>
+    </plurals>
+    <string name="library_unwatched">Непросмотренные</string>
+    <string name="library_empty">Здесь ничего нет</string>
+
+    <string name="detail_error">Не удалось загрузить: %1$s</string>
+    <string name="detail_resume">Продолжить</string>
+    <string name="detail_play">Смотреть</string>
+    <string name="detail_from_start">С начала</string>
+    <string name="detail_mark_unwatched">Отметить как непросмотренное</string>
+    <string name="detail_mark_watched">Отметить как просмотренное</string>
+    <plurals name="detail_seasons">
+        <item quantity="one">%d сезон</item>
+        <item quantity="few">%d сезона</item>
+        <item quantity="many">%d сезонов</item>
+        <item quantity="other">%d сезона</item>
+    </plurals>
+    <string name="episode_label">С%1$d · Э%2$d</string>
+
+    <string name="settings_quality">Качество воспроизведения</string>
+    <string name="settings_playback">Воспроизведение</string>
+    <string name="settings_autoplay">Автоматически запускать следующую серию</string>
+    <string name="settings_server">Сервер</string>
+    <string name="settings_relay">ретранслятор, ограничение ~2 Мбит/с</string>
+    <string name="settings_sign_out">Выйти</string>
+    <string name="settings_device">Устройство</string>
+    <string name="settings_hw_codecs">Аппаратные видеокодеки</string>
+    <string name="quality_original">Оригинал (direct play)</string>
+
+    <string name="player_load_error">Не удалось загрузить это видео с сервера.</string>
+    <string name="player_start_error">Не удалось начать воспроизведение.</string>
+    <string name="player_no_playable_file">У этого элемента нет воспроизводимого файла.</string>
+    <string name="player_file_unavailable">Сервер Plex не может прочитать файл этого видео (%1$s):\n%2$s</string>
+    <string name="player_file_missing">не существует</string>
+    <string name="player_file_no_access">нет доступа</string>
+    <string name="player_subtitles">Субтитры</string>
+    <string name="player_audio">Аудио</string>
+    <string name="player_track">Дорожка %1$s</string>
+    <string name="player_forced">Принудительные</string>
+    <string name="player_external">Внешние</string>
+    <string name="player_search_subtitles">Найти субтитры…</string>
+    <string name="player_search_subtitles_title">Поиск субтитров</string>
+    <string name="player_language">Язык</string>
+    <string name="player_searching">Поиск…</string>
+    <string name="player_search_failed">Поиск не удался</string>
+    <string name="player_no_results">Ничего не найдено</string>
+    <string name="player_subtitle_generic">Субтитры</string>
+    <string name="player_downloading">Загрузка…</string>
+    <string name="player_score">Рейтинг %1$s</string>
+    <string name="player_download_failed">Не удалось загрузить субтитры</string>
+    <string name="player_mode">Режим воспроизведения</string>
+    <string name="player_speed">Скорость воспроизведения</string>
+    <string name="player_subtitle_size">Размер субтитров</string>
+    <string name="player_mode_direct">Direct play</string>
+    <string name="player_mode_transcoding_original">Перекодирование · исходное качество</string>
+    <string name="player_mode_transcoding">Перекодирование · %1$s</string>
+    <string name="player_mode_direct_option">Direct play (оригинал)</string>
+    <string name="player_mode_transcode_option">Перекодировать · %1$s</string>
+    <string name="speed_normal">Обычная</string>
+    <string name="subtitle_size_small">Маленький</string>
+    <string name="subtitle_size_normal">Обычный</string>
+    <string name="subtitle_size_large">Большой</string>
+    <string name="subtitle_size_xlarge">Очень большой</string>
+    <string name="hint_skip_intro">OK  ·  Пропустить заставку</string>
+    <string name="hint_next_episode">OK  ·  Следующая серия</string>
+    <string name="hint_skip_credits">OK  ·  Пропустить титры</string>
+    <string name="error_title">Невозможно воспроизвести</string>
+    <string name="error_not_found">Сервер Plex не может найти файл этого видео. Возможно, он был перемещён или диск недоступен.</string>
+    <string name="error_denied">Сервер Plex отказал в доступе к этому видео.</string>
+    <string name="error_server">На сервере Plex произошла ошибка при подготовке этого видео.</string>
+    <string name="error_network">Соединение с сервером Plex потеряно.</string>
+    <string name="error_decoder">Телевизору не удалось декодировать это видео.</string>
+    <string name="error_unknown">Во время воспроизведения произошла непредвиденная ошибка.</string>
+</resources>

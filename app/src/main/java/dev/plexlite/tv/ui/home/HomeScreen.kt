@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -32,6 +33,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
+import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Directory
 import dev.plexlite.tv.data.Hub
@@ -55,11 +57,15 @@ class HomeViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null)
         private set
 
+    var serverCount by mutableStateOf(AppGraph.serverCount)
+        private set
+
     var lastFocused: String? = null
     private var loading = false
 
     fun refresh() {
         if (loading) return
+        if (serverCount == null) loadServerCount()
         loading = true
         viewModelScope.launch {
             val result = runCatching { load() }.recoverCatching {
@@ -69,9 +75,19 @@ class HomeViewModel : ViewModel() {
                 content = it
                 error = null
             }.onFailure {
-                if (content == null) error = "No se pudo conectar con el servidor: ${it.message}"
+                if (content == null) error = AppGraph.str(R.string.home_error_connect, it.message.orEmpty())
             }
             loading = false
+        }
+    }
+
+    private fun loadServerCount() {
+        val token = AppGraph.prefs.authToken ?: return
+        viewModelScope.launch {
+            runCatching { AppGraph.plexTv.servers(token).size }.onSuccess {
+                AppGraph.serverCount = it
+                serverCount = it
+            }
         }
     }
 
@@ -89,6 +105,8 @@ fun HomeScreen(
     onOpenSection: (Directory) -> Unit,
     onOpenItem: (Metadata) -> Unit,
     onOpenSettings: () -> Unit,
+    onChangeServer: () -> Unit,
+    onLanguageChanged: (String?) -> Unit,
     vm: HomeViewModel = viewModel(),
 ) {
     LifecycleResumeEffect(Unit) {
@@ -98,9 +116,9 @@ fun HomeScreen(
 
     val content = vm.content
     when {
-        content != null -> HomeContentView(content, vm, onOpenSection, onOpenItem, onOpenSettings)
+        content != null -> HomeContentView(content, vm, onOpenSection, onOpenItem, onOpenSettings, onChangeServer, onLanguageChanged)
         vm.error != null -> ErrorView(vm.error!!, onRetry = vm::refresh, onOpenSettings = onOpenSettings)
-        else -> CenteredMessage("Cargando…")
+        else -> CenteredMessage(stringResource(R.string.loading))
     }
 }
 
@@ -114,8 +132,8 @@ private fun ErrorView(message: String, onRetry: () -> Unit, onOpenSettings: () -
     ) {
         Text(message, style = MaterialTheme.typography.titleLarge, color = Color.White)
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = onRetry, modifier = Modifier.focusRequester(focus)) { Text("Reintentar") }
-            OutlinedButton(onClick = onOpenSettings) { Text("Ajustes") }
+            Button(onClick = onRetry, modifier = Modifier.focusRequester(focus)) { Text(stringResource(R.string.retry)) }
+            OutlinedButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings)) }
         }
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -128,6 +146,8 @@ private fun HomeContentView(
     onOpenSection: (Directory) -> Unit,
     onOpenItem: (Metadata) -> Unit,
     onOpenSettings: () -> Unit,
+    onChangeServer: () -> Unit,
+    onLanguageChanged: (String?) -> Unit,
 ) {
     val restore = remember { FocusRequester() }
     val initialKey = remember { vm.lastFocused }
@@ -149,19 +169,17 @@ private fun HomeContentView(
                 modifier = Modifier.padding(horizontal = 48.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    AppGraph.server?.saved?.name ?: "PlexLite",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Accent,
-                    fontWeight = FontWeight.Bold,
+                ServerMenuButton(
+                    serverName = AppGraph.server?.saved?.name ?: stringResource(R.string.app_name),
+                    canChangeServer = (vm.serverCount ?: 0) > 1,
+                    onChangeServer = onChangeServer,
+                    onOpenSettings = onOpenSettings,
+                    onLanguageChanged = onLanguageChanged,
                 )
-                Spacer(Modifier.width(32.dp))
+                Spacer(Modifier.width(24.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                     items(content.sections, key = { it.key }) { section ->
                         OutlinedButton(onClick = { onOpenSection(section) }) { Text(section.title) }
-                    }
-                    item(key = "settings") {
-                        OutlinedButton(onClick = onOpenSettings) { Text("Ajustes") }
                     }
                 }
             }
@@ -169,7 +187,7 @@ private fun HomeContentView(
         if (content.continueWatching.isNotEmpty()) {
             item(key = "cw") {
                 MediaRow(
-                    title = "Seguir viendo",
+                    title = stringResource(R.string.home_continue_watching),
                     items = content.continueWatching,
                     style = CardStyle.WIDE,
                     onClick = onOpenItem,

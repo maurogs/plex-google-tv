@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="loading">Carregando…</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="settings">Configurações</string>
+    <string name="ok">OK</string>
+    <string name="none">Nenhum</string>
+    <string name="no_server">Sem servidor</string>
+
+    <string name="login_go_to">No celular ou computador, acesse</string>
+    <string name="login_enter_code">e digite este código:</string>
+    <string name="login_choose_server">Escolha um servidor</string>
+    <string name="login_server_owned">Seu</string>
+    <string name="login_server_shared">Compartilhado</string>
+    <string name="login_server_offline">offline</string>
+    <string name="login_server_current">Atual</string>
+    <string name="login_connecting">Conectando a %1$s…</string>
+    <string name="login_error_plex_tv">Não foi possível acessar plex.tv: %1$s</string>
+    <string name="login_error_servers">Não foi possível obter a lista de servidores: %1$s</string>
+    <string name="login_error_no_servers">Sua conta não tem nenhum servidor Plex disponível.</string>
+    <string name="login_error_connect">Não foi possível conectar a %1$s. Ele está ligado e acessível de fora da sua rede?</string>
+
+    <string name="home_error_connect">Não foi possível conectar ao servidor: %1$s</string>
+    <string name="home_continue_watching">Continuar assistindo</string>
+    <string name="menu_change_server">Trocar de servidor</string>
+    <string name="menu_app_language">Idioma do app</string>
+    <string name="menu_system_language">Idioma do sistema</string>
+
+    <string name="library_error">Erro ao carregar a biblioteca: %1$s</string>
+    <plurals name="library_count">
+        <item quantity="one">%d título</item>
+        <item quantity="other">%d títulos</item>
+    </plurals>
+    <string name="library_unwatched">Não assistidos</string>
+    <string name="library_empty">Nada aqui</string>
+
+    <string name="detail_error">Não foi possível carregar: %1$s</string>
+    <string name="detail_resume">Retomar</string>
+    <string name="detail_play">Reproduzir</string>
+    <string name="detail_from_start">Do início</string>
+    <string name="detail_mark_unwatched">Marcar como não assistido</string>
+    <string name="detail_mark_watched">Marcar como assistido</string>
+    <plurals name="detail_seasons">
+        <item quantity="one">%d temporada</item>
+        <item quantity="other">%d temporadas</item>
+    </plurals>
+    <string name="episode_label">T%1$d · E%2$d</string>
+
+    <string name="settings_quality">Qualidade de reprodução</string>
+    <string name="settings_playback">Reprodução</string>
+    <string name="settings_autoplay">Reproduzir o próximo episódio automaticamente</string>
+    <string name="settings_server">Servidor</string>
+    <string name="settings_relay">relay, limitado a ~2 Mbps</string>
+    <string name="settings_sign_out">Sair</string>
+    <string name="settings_device">Dispositivo</string>
+    <string name="settings_hw_codecs">Codecs de vídeo por hardware</string>
+    <string name="quality_original">Original (direct play)</string>
+
+    <string name="player_load_error">Não foi possível carregar este vídeo do servidor.</string>
+    <string name="player_start_error">Não foi possível iniciar a reprodução.</string>
+    <string name="player_no_playable_file">Este item não tem nenhum arquivo reproduzível.</string>
+    <string name="player_file_unavailable">O servidor Plex não consegue ler o arquivo deste vídeo (%1$s):\n%2$s</string>
+    <string name="player_file_missing">não existe</string>
+    <string name="player_file_no_access">sem acesso</string>
+    <string name="player_subtitles">Legendas</string>
+    <string name="player_audio">Áudio</string>
+    <string name="player_track">Faixa %1$s</string>
+    <string name="player_forced">Forçadas</string>
+    <string name="player_external">Externa</string>
+    <string name="player_search_subtitles">Buscar legendas…</string>
+    <string name="player_search_subtitles_title">Buscar legendas</string>
+    <string name="player_language">Idioma</string>
+    <string name="player_searching">Buscando…</string>
+    <string name="player_search_failed">A busca falhou</string>
+    <string name="player_no_results">Nenhum resultado</string>
+    <string name="player_subtitle_generic">Legenda</string>
+    <string name="player_downloading">Baixando…</string>
+    <string name="player_score">Pontuação %1$s</string>
+    <string name="player_download_failed">Não foi possível baixar a legenda</string>
+    <string name="player_mode">Modo de reprodução</string>
+    <string name="player_speed">Velocidade de reprodução</string>
+    <string name="player_subtitle_size">Tamanho das legendas</string>
+    <string name="player_mode_direct">Direct play</string>
+    <string name="player_mode_transcoding_original">Transcodificando · qualidade original</string>
+    <string name="player_mode_transcoding">Transcodificando · %1$s</string>
+    <string name="player_mode_direct_option">Direct play (original)</string>
+    <string name="player_mode_transcode_option">Transcodificar · %1$s</string>
+    <string name="speed_normal">Normal</string>
+    <string name="subtitle_size_small">Pequeno</string>
+    <string name="subtitle_size_normal">Normal</string>
+    <string name="subtitle_size_large">Grande</string>
+    <string name="subtitle_size_xlarge">Muito grande</string>
+    <string name="hint_skip_intro">OK  ·  Pular abertura</string>
+    <string name="hint_next_episode">OK  ·  Próximo episódio</string>
+    <string name="hint_skip_credits">OK  ·  Pular créditos</string>
+    <string name="error_title">Não é possível reproduzir</string>
+    <string name="error_not_found">O servidor Plex não encontra o arquivo deste vídeo. Talvez ele tenha sido movido ou o disco não esteja disponível.</string>
+    <string name="error_denied">O servidor Plex negou o acesso a este vídeo.</string>
+    <string name="error_server">O servidor Plex teve um erro ao preparar este vídeo.</string>
+    <string name="error_network">A conexão com o servidor Plex foi perdida.</string>
+    <string name="error_decoder">A TV não conseguiu decodificar este vídeo.</string>
+    <string name="error_unknown">Ocorreu um erro inesperado durante a reprodução.</string>
+</resources>

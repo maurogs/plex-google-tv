@@ -17,12 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ListItem
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.RadioButton
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
+import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.DeviceProfile
 import dev.plexlite.tv.data.Quality
@@ -40,7 +42,7 @@ fun SettingsScreen(onChangeServer: () -> Unit, onSignOut: () -> Unit) {
         contentPadding = PaddingValues(vertical = 48.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        item { Header("Calidad de reproducción") }
+        item { Header(stringResource(R.string.settings_quality)) }
         items(Quality.entries) { option ->
             ListItem(
                 selected = option == quality,
@@ -53,7 +55,7 @@ fun SettingsScreen(onChangeServer: () -> Unit, onSignOut: () -> Unit) {
                 modifier = if (option == quality) Modifier.focusRequester(focus) else Modifier,
             )
         }
-        item { Header("Reproducción") }
+        item { Header(stringResource(R.string.settings_playback)) }
         item {
             ListItem(
                 selected = false,
@@ -61,20 +63,23 @@ fun SettingsScreen(onChangeServer: () -> Unit, onSignOut: () -> Unit) {
                     autoPlay = !autoPlay
                     prefs.autoPlayNext = autoPlay
                 },
-                headlineContent = { Text("Reproducir el siguiente episodio automáticamente") },
+                headlineContent = { Text(stringResource(R.string.settings_autoplay)) },
                 trailingContent = { Switch(checked = autoPlay, onCheckedChange = null) },
             )
         }
-        item { Header("Servidor") }
+        item { Header(stringResource(R.string.settings_server)) }
         item {
+            val canChangeServer = (AppGraph.serverCount ?: 0) > 1
             ListItem(
                 selected = false,
+                enabled = canChangeServer,
                 onClick = onChangeServer,
-                headlineContent = { Text("Cambiar de servidor") },
+                headlineContent = { Text(stringResource(R.string.menu_change_server)) },
                 supportingContent = {
+                    val relay = stringResource(R.string.settings_relay)
                     Text(
-                        server?.let { "${it.name} · ${it.uri}${if (it.relay) " (relay, limitado a ~2 Mbps)" else ""}" }
-                            ?: "Ninguno",
+                        server?.let { "${it.name} · ${it.uri}${if (it.relay) " ($relay)" else ""}" }
+                            ?: stringResource(R.string.none),
                     )
                 },
             )
@@ -83,15 +88,15 @@ fun SettingsScreen(onChangeServer: () -> Unit, onSignOut: () -> Unit) {
             ListItem(
                 selected = false,
                 onClick = onSignOut,
-                headlineContent = { Text("Cerrar sesión") },
+                headlineContent = { Text(stringResource(R.string.settings_sign_out)) },
             )
         }
-        item { Header("Dispositivo") }
+        item { Header(stringResource(R.string.settings_device)) }
         item {
             ListItem(
                 selected = false,
                 onClick = {},
-                headlineContent = { Text("Códecs de vídeo por hardware") },
+                headlineContent = { Text(stringResource(R.string.settings_hw_codecs)) },
                 supportingContent = { Text(DeviceProfile.videoCodecs.joinToString(", ")) },
             )
         }

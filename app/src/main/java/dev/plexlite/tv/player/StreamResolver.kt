@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import dev.plexlite.tv.R
+import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.DeviceProfile
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.data.Part
@@ -27,12 +29,18 @@ class StreamResolver(private val server: PlexServer) {
         quality: Quality,
         forceTranscode: Boolean,
         audioStreamId: Long? = null,
+        subtitleStreamId: Long? = null,
+        subtitleScale: Float = 1f,
     ): PlaybackPlan {
-        val part = item.media.getOrNull(mediaIndex)?.parts?.firstOrNull() ?: error("Este elemento no tiene ningún archivo reproducible")
+        val part = item.media.getOrNull(mediaIndex)?.parts?.firstOrNull() ?: error(AppGraph.str(R.string.player_no_playable_file))
         val effectiveQuality = if (server.saved.relay && quality == Quality.ORIGINAL) Quality.MBPS_2 else quality
         val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.id == audioStreamId }
             ?: part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
-        val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
+        val subtitle = when (subtitleStreamId) {
+            null -> part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
+            0L -> null
+            else -> part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.id == subtitleStreamId }
+        }
 
         val common = buildList {
             add("path" to "/library/metadata/${item.ratingKey}")
@@ -85,7 +93,7 @@ class StreamResolver(private val server: PlexServer) {
             if (subtitle != null) {
                 add("subtitles" to "burn")
                 add("subtitleStreamID" to subtitle.id.toString())
-                add("subtitleSize" to "100")
+                add("subtitleSize" to (100 * subtitleScale).toInt().toString())
             } else {
                 add("subtitles" to "none")
                 add("subtitleStreamID" to "0")
@@ -136,9 +144,9 @@ class StreamResolver(private val server: PlexServer) {
 
         fun unavailableMessage(item: Metadata): String {
             val part = item.media.firstOrNull()?.parts?.firstOrNull()
-                ?: return "Este elemento no tiene ningún archivo reproducible."
-            val reason = if (part.exists == false) "no existe" else "sin acceso"
-            return "El servidor Plex no puede leer el archivo de este vídeo ($reason):\n${part.file.orEmpty()}"
+                ?: return AppGraph.str(R.string.player_no_playable_file)
+            val reason = AppGraph.str(if (part.exists == false) R.string.player_file_missing else R.string.player_file_no_access)
+            return AppGraph.str(R.string.player_file_unavailable, reason, part.file.orEmpty())
         }
 
         fun sidecarId(stream: Stream) = "plex-${stream.id}"

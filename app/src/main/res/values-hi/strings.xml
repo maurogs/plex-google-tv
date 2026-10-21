@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="loading">लोड हो रहा है…</string>
+    <string name="retry">फिर से कोशिश करें</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="ok">ठीक है</string>
+    <string name="none">कोई नहीं</string>
+    <string name="no_server">कोई सर्वर नहीं</string>
+
+    <string name="login_go_to">अपने फ़ोन या कंप्यूटर पर यहाँ जाएँ</string>
+    <string name="login_enter_code">और यह कोड डालें:</string>
+    <string name="login_choose_server">सर्वर चुनें</string>
+    <string name="login_server_owned">आपका</string>
+    <string name="login_server_shared">साझा</string>
+    <string name="login_server_offline">ऑफ़लाइन</string>
+    <string name="login_server_current">वर्तमान</string>
+    <string name="login_connecting">%1$s से कनेक्ट हो रहा है…</string>
+    <string name="login_error_plex_tv">plex.tv से संपर्क नहीं हो सका: %1$s</string>
+    <string name="login_error_servers">सर्वर की सूची नहीं मिल सकी: %1$s</string>
+    <string name="login_error_no_servers">आपके खाते में कोई Plex सर्वर उपलब्ध नहीं है।</string>
+    <string name="login_error_connect">%1$s से कनेक्ट नहीं हो सका। क्या यह चालू है और आपके नेटवर्क के बाहर से पहुँच योग्य है?</string>
+
+    <string name="home_error_connect">सर्वर से कनेक्ट नहीं हो सका: %1$s</string>
+    <string name="home_continue_watching">देखना जारी रखें</string>
+    <string name="menu_change_server">सर्वर बदलें</string>
+    <string name="menu_app_language">ऐप की भाषा</string>
+    <string name="menu_system_language">सिस्टम की भाषा</string>
+
+    <string name="library_error">लाइब्रेरी लोड करने में त्रुटि: %1$s</string>
+    <plurals name="library_count">
+        <item quantity="one">%d शीर्षक</item>
+        <item quantity="other">%d शीर्षक</item>
+    </plurals>
+    <string name="library_unwatched">नहीं देखे गए</string>
+    <string name="library_empty">यहाँ कुछ नहीं है</string>
+
+    <string name="detail_error">लोड नहीं हो सका: %1$s</string>
+    <string name="detail_resume">जारी रखें</string>
+    <string name="detail_play">चलाएँ</string>
+    <string name="detail_from_start">शुरू से</string>
+    <string name="detail_mark_unwatched">नहीं देखा गया के रूप में चिह्नित करें</string>
+    <string name="detail_mark_watched">देखा गया के रूप में चिह्नित करें</string>
+    <plurals name="detail_seasons">
+        <item quantity="one">%d सीज़न</item>
+        <item quantity="other">%d सीज़न</item>
+    </plurals>
+    <string name="episode_label">सी%1$d · ए%2$d</string>
+
+    <string name="settings_quality">प्लेबैक गुणवत्ता</string>
+    <string name="settings_playback">प्लेबैक</string>
+    <string name="settings_autoplay">अगला एपिसोड अपने आप चलाएँ</string>
+    <string name="settings_server">सर्वर</string>
+    <string name="settings_relay">रिले, ~2 Mbps तक सीमित</string>
+    <string name="settings_sign_out">साइन आउट करें</string>
+    <string name="settings_device">डिवाइस</string>
+    <string name="settings_hw_codecs">हार्डवेयर वीडियो कोडेक</string>
+    <string name="quality_original">मूल (direct play)</string>
+
+    <string name="player_load_error">सर्वर से यह वीडियो लोड नहीं हो सका।</string>
+    <string name="player_start_error">प्लेबैक शुरू नहीं हो सका।</string>
+    <string name="player_no_playable_file">इस आइटम में चलाने योग्य कोई फ़ाइल नहीं है।</string>
+    <string name="player_file_unavailable">Plex सर्वर इस वीडियो की फ़ाइल नहीं पढ़ सकता (%1$s):\n%2$s</string>
+    <string name="player_file_missing">मौजूद नहीं है</string>
+    <string name="player_file_no_access">पहुँच नहीं है</string>
+    <string name="player_subtitles">सबटाइटल</string>
+    <string name="player_audio">ऑडियो</string>
+    <string name="player_track">ट्रैक %1$s</string>
+    <string name="player_forced">फ़ोर्स्ड</string>
+    <string name="player_external">बाहरी</string>
+    <string name="player_search_subtitles">सबटाइटल खोजें…</string>
+    <string name="player_search_subtitles_title">सबटाइटल खोजें</string>
+    <string name="player_language">भाषा</string>
+    <string name="player_searching">खोज रहे हैं…</string>
+    <string name="player_search_failed">खोज विफल रही</string>
+    <string name="player_no_results">कोई परिणाम नहीं</string>
+    <string name="player_subtitle_generic">सबटाइटल</string>
+    <string name="player_downloading">डाउनलोड हो रहा है…</string>
+    <string name="player_score">स्कोर %1$s</string>
+    <string name="player_download_failed">सबटाइटल डाउनलोड नहीं हो सका</string>
+    <string name="player_mode">प्लेबैक मोड</string>
+    <string name="player_speed">प्लेबैक गति</string>
+    <string name="player_subtitle_size">सबटाइटल का आकार</string>
+    <string name="player_mode_direct">Direct play</string>
+    <string name="player_mode_transcoding_original">ट्रांसकोडिंग · मूल गुणवत्ता</string>
+    <string name="player_mode_transcoding">ट्रांसकोडिंग · %1$s</string>
+    <string name="player_mode_direct_option">Direct play (मूल)</string>
+    <string name="player_mode_transcode_option">ट्रांसकोड करें · %1$s</string>
+    <string name="speed_normal">सामान्य</string>
+    <string name="subtitle_size_small">छोटा</string>
+    <string name="subtitle_size_normal">सामान्य</string>
+    <string name="subtitle_size_large">बड़ा</string>
+    <string name="subtitle_size_xlarge">बहुत बड़ा</string>
+    <string name="hint_skip_intro">OK  ·  इंट्रो छोड़ें</string>
+    <string name="hint_next_episode">OK  ·  अगला एपिसोड</string>
+    <string name="hint_skip_credits">OK  ·  क्रेडिट छोड़ें</string>
+    <string name="error_title">चलाया नहीं जा सकता</string>
+    <string name="error_not_found">Plex सर्वर को इस वीडियो की फ़ाइल नहीं मिल रही। हो सकता है इसे हटा दिया गया हो या डिस्क उपलब्ध न हो।</string>
+    <string name="error_denied">Plex सर्वर ने इस वीडियो तक पहुँच से इनकार कर दिया।</string>
+    <string name="error_server">यह वीडियो तैयार करते समय Plex सर्वर में त्रुटि हुई।</string>
+    <string name="error_network">Plex सर्वर से कनेक्शन टूट गया।</string>
+    <string name="error_decoder">टीवी इस वीडियो को डिकोड नहीं कर सका।</string>
+    <string name="error_unknown">प्लेबैक के दौरान एक अनपेक्षित त्रुटि हुई।</string>
+</resources>

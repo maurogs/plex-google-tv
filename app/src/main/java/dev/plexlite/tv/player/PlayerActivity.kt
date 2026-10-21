@@ -20,6 +20,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.accessibility.CaptioningManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -46,11 +47,14 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.SubtitleView
 import androidx.media3.ui.R as Media3R
 import dev.plexlite.tv.R
 import dev.plexlite.tv.data.Quality
+import dev.plexlite.tv.data.SubtitleSize
 import dev.plexlite.tv.ui.components.formatClock
 import dev.plexlite.tv.data.AppGraph
+import dev.plexlite.tv.data.AppLocale
 import dev.plexlite.tv.data.Http
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.data.Part
@@ -60,6 +64,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.Locale
 import java.util.UUID
 
 @UnstableApi
@@ -95,10 +100,24 @@ class PlayerActivity : ComponentActivity() {
     private var currentAttempt = Attempt(0, false)
     private var qualityOverride: Quality? = null
     private var audioOverride: Long? = null
+    private var subtitleOverride: Long? = null
+    private var subtitleSearch: SubtitleSearch = SubtitleSearch()
     private lateinit var menu: OverlayMenu
     private var menuOpener: View? = null
 
     private data class Attempt(val candidate: Int, val transcode: Boolean)
+
+    private data class SubtitleSearch(
+        val language: String? = null,
+        val loading: Boolean = false,
+        val results: List<Stream>? = null,
+        val error: String? = null,
+        val downloadingKey: String? = null,
+    )
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase, AppGraph.prefs.language))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -165,7 +184,7 @@ class PlayerActivity : ComponentActivity() {
             controllerAutoShow = false
             controllerShowTimeoutMs = 8_000
             setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-            setShowSubtitleButton(true)
+            setShowSubtitleButton(false)
             setShowNextButton(false)
             setShowPreviousButton(false)
             setShowShuffleButton(false)
@@ -222,6 +241,7 @@ class PlayerActivity : ComponentActivity() {
         setContentView(root)
         installControlButtons()
         styleControllerFocus(playerView)
+        applySubtitleSize()
     }
 
     private fun load(ratingKey: String, fromStart: Boolean, attempt: Attempt = Attempt(0, false), resumeAtMs: Long? = null) {
@@ -230,7 +250,7 @@ class PlayerActivity : ComponentActivity() {
             hideError()
             val item = runCatching { server.metadata(ratingKey, checkFiles = true) }.getOrNull()
             if (item == null) {
-                showError("No se pudo cargar este vídeo desde el servidor.", null)
+                showError(getString(R.string.player_load_error), null)
                 return@launch
             }
             current = item
@@ -250,10 +270,10 @@ class PlayerActivity : ComponentActivity() {
             Log.i(StreamResolver.TAG, "Attempt media=$mediaIndex (${attempt.candidate + 1}/${mediaCandidates.size}) transcode=${attempt.transcode}")
 
             val plan = runCatching {
-                resolver.resolve(item, mediaIndex, sessionId, activeQuality, attempt.transcode, audioOverride)
+                resolver.resolve(item, mediaIndex, sessionId, activeQuality, attempt.transcode, audioOverride, subtitleOverride, AppGraph.prefs.subtitleSize.scale)
             }.getOrElse {
                 Log.e(StreamResolver.TAG, "Resolve failed", it)
-                failOver(it.message ?: "No se pudo iniciar la reproducción.", null, resumeAtMs)
+                failOver(it.message ?: getString(R.string.player_start_error), null, resumeAtMs)
                 return@launch
             }
             currentAttempt = attempt.copy(transcode = plan.transcode)
@@ -290,8 +310,10 @@ class PlayerActivity : ComponentActivity() {
         }
         val width = template?.layoutParams?.width ?: dp(52)
         val height = template?.layoutParams?.height ?: dp(52)
-        controls.addView(button(R.drawable.ic_audio, "Audio") { openAudioMenu(it) }, LinearLayout.LayoutParams(width, height))
-        controls.addView(button(R.drawable.ic_settings, "Ajustes") { openSettingsMenu(it) }, LinearLayout.LayoutParams(width, height))
+        template?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        controls.addView(button(R.drawable.ic_subtitles, getString(R.string.player_subtitles)) { openSubtitleMenu(it) }, LinearLayout.LayoutParams(width, height))
+        controls.addView(button(R.drawable.ic_audio, getString(R.string.player_audio)) { openAudioMenu(it) }, LinearLayout.LayoutParams(width, height))
+        controls.addView(button(R.drawable.ic_settings, getString(R.string.settings)) { openSettingsMenu(it) }, LinearLayout.LayoutParams(width, height))
     }
 
     private fun openMenu(opener: View, title: String, entries: () -> List<MenuEntry>) {
@@ -310,12 +332,12 @@ class PlayerActivity : ComponentActivity() {
 
     private fun openAudioMenu(opener: View) {
         val part = currentPart ?: return
-        openMenu(opener, "Audio") {
+        openMenu(opener, getString(R.string.player_audio)) {
             val active = activeAudioStream(part)
             part.streams.filter { it.streamType == Stream.AUDIO }.map { stream ->
                 val title = stream.title?.takeIf { it.isNotBlank() }
                 MenuEntry(
-                    label = title ?: stream.displayTitle ?: stream.language ?: "Pista ${stream.index ?: stream.id}",
+                    label = title ?: stream.displayTitle ?: stream.language ?: getString(R.string.player_track, (stream.index ?: stream.id).toString()),
                     value = if (title != null) stream.displayTitle else null,
                     checked = stream.id == active?.id,
                 ) { selectAudio(part, stream) }
@@ -344,12 +366,206 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
+    private fun activeSubtitleStream(part: Part): Stream? = when (val override = subtitleOverride) {
+        null -> part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
+        0L -> null
+        else -> part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.id == override }
+    }
+
+    private fun openSubtitleMenu(opener: View) {
+        if (currentPart == null) return
+        openMenu(opener, getString(R.string.player_subtitles), ::subtitleEntries)
+    }
+
+    private fun subtitleEntries(): List<MenuEntry> {
+        val part = currentPart ?: return emptyList()
+        val active = activeSubtitleStream(part)
+        return buildList {
+            add(MenuEntry(getString(R.string.none), checked = active == null) { selectSubtitle(null) })
+            part.streams.filter { it.streamType == Stream.SUBTITLE }.forEach { stream ->
+                val title = stream.title?.takeIf { it.isNotBlank() }
+                val details = listOfNotNull(
+                    stream.displayTitle.takeIf { title != null },
+                    getString(R.string.player_forced).takeIf { stream.forced },
+                    getString(R.string.player_external).takeIf { stream.key != null },
+                ).joinToString(" · ")
+                add(
+                    MenuEntry(
+                        label = title ?: stream.displayTitle ?: stream.language ?: getString(R.string.player_track, (stream.index ?: stream.id).toString()),
+                        value = details.ifEmpty { null },
+                        checked = stream.id == active?.id,
+                    ) { selectSubtitle(stream) },
+                )
+            }
+            add(MenuEntry(getString(R.string.player_search_subtitles), "OpenSubtitles") { openSubtitleSearch() })
+        }
+    }
+
+    private fun selectSubtitle(stream: Stream?) {
+        menu.close()
+        val part = currentPart ?: return
+        if (stream?.id == activeSubtitleStream(part)?.id) return
+        subtitleOverride = stream?.id ?: 0L
+        lifecycleScope.launch {
+            val saved = runCatching { server.selectSubtitleStream(part.id, stream?.id ?: 0L) }
+            if (saved.isFailure) Log.w(StreamResolver.TAG, "Could not save subtitle selection", saved.exceptionOrNull())
+            if (transcoding) {
+                restartAtCurrentPosition(currentAttempt)
+                return@launch
+            }
+            val builder = player.trackSelectionParameters.buildUpon().clearOverridesOfType(C.TRACK_TYPE_TEXT)
+            if (stream == null) {
+                player.trackSelectionParameters = builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true).build()
+                return@launch
+            }
+            val override = findTrack(player.currentTracks, C.TRACK_TYPE_TEXT, stream)
+            if (override == null) {
+                restartAtCurrentPosition(currentAttempt)
+                return@launch
+            }
+            player.trackSelectionParameters = builder
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                .setOverrideForType(override)
+                .build()
+        }
+    }
+
+    private fun openSubtitleSearch() {
+        if (subtitleSearch.language == null) subtitleSearch = subtitleSearch.copy(language = defaultSearchLanguage())
+        menu.push(getString(R.string.player_search_subtitles_title), ::searchEntries)
+        if (subtitleSearch.results == null && !subtitleSearch.loading) runSubtitleSearch()
+    }
+
+    private fun defaultSearchLanguage(): String {
+        val fromSubtitle = currentPart?.let { activeSubtitleStream(it)?.languageCode }
+        val code = fromSubtitle?.let { Util.normalizeLanguageCode(it) } ?: Locale.getDefault().language
+        return code.substringBefore('-').takeIf { it.length == 2 } ?: "es"
+    }
+
+    private fun runSubtitleSearch() {
+        val item = current ?: return
+        val language = subtitleSearch.language ?: return
+        subtitleSearch = subtitleSearch.copy(loading = true, error = null, results = null)
+        menu.refresh()
+        lifecycleScope.launch {
+            val result = runCatching { server.searchSubtitles(item.ratingKey, language) }
+            if (current?.ratingKey != item.ratingKey || subtitleSearch.language != language) return@launch
+            result.exceptionOrNull()?.let { Log.w(StreamResolver.TAG, "Subtitle search failed", it) }
+            subtitleSearch = subtitleSearch.copy(
+                loading = false,
+                results = result.getOrNull(),
+                error = result.exceptionOrNull()?.let { getString(R.string.player_search_failed) },
+            )
+            menu.refresh()
+        }
+    }
+
+    private fun searchEntries(): List<MenuEntry> {
+        val search = subtitleSearch
+        val languageName = search.language?.let(::languageName).orEmpty()
+        return buildList {
+            add(MenuEntry(getString(R.string.player_language), languageName) { menu.push(getString(R.string.player_language), ::searchLanguageEntries) })
+            val results = search.results
+            when {
+                search.loading -> add(MenuEntry(getString(R.string.player_searching)) {})
+                search.error != null -> add(MenuEntry(getString(R.string.retry), search.error) { runSubtitleSearch() })
+                results.isNullOrEmpty() -> add(MenuEntry(getString(R.string.player_no_results)) {})
+                else -> results.forEach { candidate ->
+                    val key = candidate.key ?: return@forEach
+                    add(
+                        MenuEntry(
+                            label = candidate.title?.takeIf { it.isNotBlank() } ?: candidate.displayTitle ?: getString(R.string.player_subtitle_generic),
+                            value = if (search.downloadingKey == key) {
+                                getString(R.string.player_downloading)
+                            } else {
+                                val source = listOfNotNull(candidate.codec?.uppercase(), candidate.providerTitle).joinToString(" ")
+                                listOfNotNull(
+                                    candidate.displayTitle?.let { if (source.isEmpty()) it else "$it ($source)" },
+                                    candidate.score?.let { getString(R.string.player_score, it) },
+                                ).joinToString("  ·  ")
+                            },
+                        ) { downloadSubtitle(candidate) },
+                    )
+                }
+            }
+        }
+    }
+
+    private fun languageName(code: String): String {
+        val appLocale = resources.configuration.locales[0]
+        return Locale.forLanguageTag(code).getDisplayLanguage(appLocale).replaceFirstChar { it.titlecase(appLocale) }
+    }
+
+    private fun searchLanguageEntries(): List<MenuEntry> = SEARCH_LANGUAGES.map { code ->
+        MenuEntry(languageName(code), checked = code == subtitleSearch.language) {
+            subtitleSearch = SubtitleSearch(language = code)
+            menu.back()
+            runSubtitleSearch()
+        }
+    }
+
+    private fun downloadSubtitle(candidate: Stream) {
+        val item = current ?: return
+        val part = currentPart ?: return
+        val key = candidate.key ?: return
+        if (subtitleSearch.downloadingKey != null) return
+        subtitleSearch = subtitleSearch.copy(downloadingKey = key)
+        menu.refresh()
+        val existing = part.streams.filter { it.streamType == Stream.SUBTITLE }.map { it.id }.toSet()
+        lifecycleScope.launch {
+            val requested = runCatching { server.downloadSubtitle(item.ratingKey, key) }
+            requested.exceptionOrNull()?.let { Log.w(StreamResolver.TAG, "Subtitle download failed", it) }
+            var added: Stream? = null
+            if (requested.isSuccess) {
+                for (attempt in 0 until 15) {
+                    delay(1_000)
+                    val fresh = runCatching { server.metadata(item.ratingKey) }.getOrNull()
+                    added = fresh?.media?.flatMap { it.parts }?.firstOrNull { it.id == part.id }
+                        ?.streams?.firstOrNull { it.streamType == Stream.SUBTITLE && it.id !in existing }
+                    if (added != null) break
+                }
+            }
+            if (current?.ratingKey != item.ratingKey) return@launch
+            subtitleSearch = subtitleSearch.copy(downloadingKey = null)
+            val stream = added
+            if (stream == null) {
+                subtitleSearch = subtitleSearch.copy(error = getString(R.string.player_download_failed))
+                menu.refresh()
+                return@launch
+            }
+            menu.close()
+            subtitleOverride = stream.id
+            restartAtCurrentPosition(currentAttempt)
+        }
+    }
+
+    private fun subtitleSizeEntries(): List<MenuEntry> = SubtitleSize.entries.map { size ->
+        MenuEntry(size.label, checked = size == AppGraph.prefs.subtitleSize) {
+            val changed = size != AppGraph.prefs.subtitleSize
+            AppGraph.prefs.subtitleSize = size
+            menu.close()
+            if (!changed) return@MenuEntry
+            applySubtitleSize()
+            if (transcoding && currentPart?.let { activeSubtitleStream(it) } != null) restartAtCurrentPosition(currentAttempt)
+        }
+    }
+
+    private fun applySubtitleSize() {
+        val userScale = getSystemService(CaptioningManager::class.java)?.fontScale ?: 1f
+        playerView.subtitleView?.setFractionalTextSize(
+            SubtitleView.DEFAULT_TEXT_SIZE_FRACTION * userScale * AppGraph.prefs.subtitleSize.scale,
+        )
+    }
+
     private fun openSettingsMenu(opener: View) {
-        openMenu(opener, "Ajustes") {
+        openMenu(opener, getString(R.string.settings)) {
             listOf(
-                MenuEntry("Modo de reproducción", modeLabel()) { menu.push("Modo de reproducción", ::modeEntries) },
-                MenuEntry("Velocidad de reproducción", speedLabel(player.playbackParameters.speed)) {
-                    menu.push("Velocidad de reproducción", ::speedEntries)
+                MenuEntry(getString(R.string.player_mode), modeLabel()) { menu.push(getString(R.string.player_mode), ::modeEntries) },
+                MenuEntry(getString(R.string.player_speed), speedLabel(player.playbackParameters.speed)) {
+                    menu.push(getString(R.string.player_speed), ::speedEntries)
+                },
+                MenuEntry(getString(R.string.player_subtitle_size), AppGraph.prefs.subtitleSize.label) {
+                    menu.push(getString(R.string.player_subtitle_size), ::subtitleSizeEntries)
                 },
             )
         }
@@ -358,14 +574,14 @@ class PlayerActivity : ComponentActivity() {
     private fun modeLabel(): String {
         val quality = activeQuality
         return when {
-            !transcoding -> "Direct play"
-            quality == Quality.ORIGINAL -> "Transcodificando · calidad original"
-            else -> "Transcodificando · ${quality.label}"
+            !transcoding -> getString(R.string.player_mode_direct)
+            quality == Quality.ORIGINAL -> getString(R.string.player_mode_transcoding_original)
+            else -> getString(R.string.player_mode_transcoding, quality.label)
         }
     }
 
     private fun modeEntries(): List<MenuEntry> = Quality.entries.map { quality ->
-        val label = if (quality == Quality.ORIGINAL) "Direct play (original)" else "Transcodificar · ${quality.label}"
+        val label = if (quality == Quality.ORIGINAL) getString(R.string.player_mode_direct_option) else getString(R.string.player_mode_transcode_option, quality.label)
         MenuEntry(label, checked = quality == activeQuality) {
             menu.close()
             if (quality == activeQuality && transcoding == (quality != Quality.ORIGINAL)) return@MenuEntry
@@ -381,7 +597,7 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
-    private fun speedLabel(speed: Float): String = if (speed == 1f) "Normal" else "${speed.toString().removeSuffix(".0")}x"
+    private fun speedLabel(speed: Float): String = if (speed == 1f) getString(R.string.speed_normal) else "${speed.toString().removeSuffix(".0")}x"
 
     private fun accumulateSeek(deltaMs: Long) {
         if (current == null || player.playbackState == Player.STATE_IDLE) return
@@ -455,7 +671,7 @@ class PlayerActivity : ComponentActivity() {
 
     private fun applyDefaultTrackPreferences(part: Part, transcode: Boolean) {
         val audio = activeAudioStream(part)
-        val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
+        val subtitle = activeSubtitleStream(part)
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .clearOverrides()
             .setPreferredAudioLanguage(audio?.languageCode)
@@ -473,7 +689,7 @@ class PlayerActivity : ComponentActivity() {
         activeAudioStream(part)?.let { stream ->
             findTrack(tracks, C.TRACK_TYPE_AUDIO, stream)?.let { builder.setOverrideForType(it) }
         }
-        part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }?.let { stream ->
+        activeSubtitleStream(part)?.let { stream ->
             findTrack(tracks, C.TRACK_TYPE_TEXT, stream)?.let { builder.setOverrideForType(it) }
         }
         player.trackSelectionParameters = builder.build()
@@ -558,9 +774,9 @@ class PlayerActivity : ComponentActivity() {
         val credits = item.markers.firstOrNull { it.type == "credits" && position >= it.startTimeOffset && (it.final || position < it.endTimeOffset - 1_000) }
         val next = nextItem()
         when {
-            intro != null -> setHint("OK  ·  Saltar intro") { player.seekTo(intro.endTimeOffset) }
-            credits != null && next != null -> setHint("OK  ·  Siguiente episodio") { playNext(next) }
-            credits != null && !credits.final -> setHint("OK  ·  Saltar créditos") { player.seekTo(credits.endTimeOffset) }
+            intro != null -> setHint(getString(R.string.hint_skip_intro)) { player.seekTo(intro.endTimeOffset) }
+            credits != null && next != null -> setHint(getString(R.string.hint_next_episode)) { playNext(next) }
+            credits != null && !credits.final -> setHint(getString(R.string.hint_skip_credits)) { player.seekTo(credits.endTimeOffset) }
             else -> setHint(null, null)
         }
     }
@@ -587,6 +803,8 @@ class PlayerActivity : ComponentActivity() {
         player.stop()
         setHint(null, null)
         audioOverride = null
+        subtitleOverride = null
+        subtitleSearch = SubtitleSearch()
         load(next.ratingKey, fromStart = false, attempt = Attempt(0, transcode = qualityOverride != null && qualityOverride != Quality.ORIGINAL))
     }
 
@@ -636,7 +854,7 @@ class PlayerActivity : ComponentActivity() {
         }
         errorPanel.addView(
             TextView(this).apply {
-                text = "No se puede reproducir"
+                text = getString(R.string.error_title)
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
                 typeface = Typeface.DEFAULT_BOLD
@@ -659,7 +877,7 @@ class PlayerActivity : ComponentActivity() {
         }
         errorPanel.addView(errorDetails)
         errorButton = TextView(this).apply {
-            text = "OK"
+            text = getString(R.string.ok)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -735,14 +953,14 @@ class PlayerActivity : ComponentActivity() {
             .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
             .firstOrNull()?.responseCode
         return when {
-            httpCode == 404 -> "El servidor Plex no encuentra el archivo de este vídeo. Puede que se haya movido o que el disco no esté disponible."
-            httpCode == 401 || httpCode == 403 -> "El servidor Plex ha rechazado el acceso a este vídeo."
-            httpCode != null && httpCode >= 500 -> "El servidor Plex ha tenido un error al preparar este vídeo."
+            httpCode == 404 -> getString(R.string.error_not_found)
+            httpCode == 401 || httpCode == 403 -> getString(R.string.error_denied)
+            httpCode != null && httpCode >= 500 -> getString(R.string.error_server)
             error.errorCode in PlaybackException.ERROR_CODE_IO_UNSPECIFIED..PlaybackException.ERROR_CODE_IO_CLEARTEXT_NOT_PERMITTED ->
-                "Se ha perdido la conexión con el servidor Plex."
+                getString(R.string.error_network)
             error.errorCode in PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED ->
-                "La TV no ha podido decodificar este vídeo."
-            else -> "Ha ocurrido un error inesperado durante la reproducción."
+                getString(R.string.error_decoder)
+            else -> getString(R.string.error_unknown)
         }
     }
 
@@ -807,6 +1025,7 @@ class PlayerActivity : ComponentActivity() {
     companion object {
         private const val ACCENT = 0xFFE5A00D.toInt()
         private const val SEEK_STEP_MS = 10_000L
+        private val SEARCH_LANGUAGES = listOf("es", "en", "fr", "it", "de", "pt", "ca", "zh", "hi", "ar", "bn", "ru", "ur")
         private const val EXTRA_RATING_KEY = "rating_key"
         private const val EXTRA_FROM_START = "from_start"
 

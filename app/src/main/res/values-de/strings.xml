@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="loading">Wird geladen…</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="settings">Einstellungen</string>
+    <string name="ok">OK</string>
+    <string name="none">Keine</string>
+    <string name="no_server">Kein Server</string>
+
+    <string name="login_go_to">Öffne auf deinem Handy oder Computer</string>
+    <string name="login_enter_code">und gib diesen Code ein:</string>
+    <string name="login_choose_server">Server auswählen</string>
+    <string name="login_server_owned">Deiner</string>
+    <string name="login_server_shared">Geteilt</string>
+    <string name="login_server_offline">offline</string>
+    <string name="login_server_current">Aktuell</string>
+    <string name="login_connecting">Verbindung zu %1$s wird hergestellt…</string>
+    <string name="login_error_plex_tv">plex.tv ist nicht erreichbar: %1$s</string>
+    <string name="login_error_servers">Die Serverliste konnte nicht abgerufen werden: %1$s</string>
+    <string name="login_error_no_servers">In deinem Konto ist kein Plex-Server verfügbar.</string>
+    <string name="login_error_connect">Verbindung zu %1$s nicht möglich. Ist er eingeschaltet und von außerhalb deines Netzwerks erreichbar?</string>
+
+    <string name="home_error_connect">Verbindung zum Server nicht möglich: %1$s</string>
+    <string name="home_continue_watching">Weiterschauen</string>
+    <string name="menu_change_server">Server wechseln</string>
+    <string name="menu_app_language">App-Sprache</string>
+    <string name="menu_system_language">Systemsprache</string>
+
+    <string name="library_error">Fehler beim Laden der Mediathek: %1$s</string>
+    <plurals name="library_count">
+        <item quantity="one">%d Titel</item>
+        <item quantity="other">%d Titel</item>
+    </plurals>
+    <string name="library_unwatched">Ungesehen</string>
+    <string name="library_empty">Hier ist nichts</string>
+
+    <string name="detail_error">Laden fehlgeschlagen: %1$s</string>
+    <string name="detail_resume">Fortsetzen</string>
+    <string name="detail_play">Abspielen</string>
+    <string name="detail_from_start">Von vorne</string>
+    <string name="detail_mark_unwatched">Als ungesehen markieren</string>
+    <string name="detail_mark_watched">Als gesehen markieren</string>
+    <plurals name="detail_seasons">
+        <item quantity="one">%d Staffel</item>
+        <item quantity="other">%d Staffeln</item>
+    </plurals>
+    <string name="episode_label">S%1$d · F%2$d</string>
+
+    <string name="settings_quality">Wiedergabequalität</string>
+    <string name="settings_playback">Wiedergabe</string>
+    <string name="settings_autoplay">Nächste Folge automatisch abspielen</string>
+    <string name="settings_server">Server</string>
+    <string name="settings_relay">Relay, auf ~2 Mbps begrenzt</string>
+    <string name="settings_sign_out">Abmelden</string>
+    <string name="settings_device">Gerät</string>
+    <string name="settings_hw_codecs">Hardware-Videocodecs</string>
+    <string name="quality_original">Original (direct play)</string>
+
+    <string name="player_load_error">Dieses Video konnte nicht vom Server geladen werden.</string>
+    <string name="player_start_error">Die Wiedergabe konnte nicht gestartet werden.</string>
+    <string name="player_no_playable_file">Dieses Element hat keine abspielbare Datei.</string>
+    <string name="player_file_unavailable">Der Plex-Server kann die Datei dieses Videos nicht lesen (%1$s):\n%2$s</string>
+    <string name="player_file_missing">nicht vorhanden</string>
+    <string name="player_file_no_access">kein Zugriff</string>
+    <string name="player_subtitles">Untertitel</string>
+    <string name="player_audio">Audio</string>
+    <string name="player_track">Spur %1$s</string>
+    <string name="player_forced">Erzwungen</string>
+    <string name="player_external">Extern</string>
+    <string name="player_search_subtitles">Untertitel suchen…</string>
+    <string name="player_search_subtitles_title">Untertitel suchen</string>
+    <string name="player_language">Sprache</string>
+    <string name="player_searching">Suche läuft…</string>
+    <string name="player_search_failed">Suche fehlgeschlagen</string>
+    <string name="player_no_results">Keine Ergebnisse</string>
+    <string name="player_subtitle_generic">Untertitel</string>
+    <string name="player_downloading">Wird heruntergeladen…</string>
+    <string name="player_score">Bewertung %1$s</string>
+    <string name="player_download_failed">Der Untertitel konnte nicht heruntergeladen werden</string>
+    <string name="player_mode">Wiedergabemodus</string>
+    <string name="player_speed">Wiedergabegeschwindigkeit</string>
+    <string name="player_subtitle_size">Untertitelgröße</string>
+    <string name="player_mode_direct">Direct play</string>
+    <string name="player_mode_transcoding_original">Transkodierung · Originalqualität</string>
+    <string name="player_mode_transcoding">Transkodierung · %1$s</string>
+    <string name="player_mode_direct_option">Direct play (Original)</string>
+    <string name="player_mode_transcode_option">Transkodieren · %1$s</string>
+    <string name="speed_normal">Normal</string>
+    <string name="subtitle_size_small">Klein</string>
+    <string name="subtitle_size_normal">Normal</string>
+    <string name="subtitle_size_large">Groß</string>
+    <string name="subtitle_size_xlarge">Sehr groß</string>
+    <string name="hint_skip_intro">OK  ·  Intro überspringen</string>
+    <string name="hint_next_episode">OK  ·  Nächste Folge</string>
+    <string name="hint_skip_credits">OK  ·  Abspann überspringen</string>
+    <string name="error_title">Wiedergabe nicht möglich</string>
+    <string name="error_not_found">Der Plex-Server findet die Datei dieses Videos nicht. Möglicherweise wurde sie verschoben oder die Festplatte ist nicht verfügbar.</string>
+    <string name="error_denied">Der Plex-Server hat den Zugriff auf dieses Video verweigert.</string>
+    <string name="error_server">Beim Vorbereiten dieses Videos ist auf dem Plex-Server ein Fehler aufgetreten.</string>
+    <string name="error_network">Die Verbindung zum Plex-Server wurde unterbrochen.</string>
+    <string name="error_decoder">Der Fernseher konnte dieses Video nicht dekodieren.</string>
+    <string name="error_unknown">Während der Wiedergabe ist ein unerwarteter Fehler aufgetreten.</string>
+</resources>

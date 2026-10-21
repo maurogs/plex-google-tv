@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -32,6 +34,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.FilterChip
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.ui.components.CardStyle
@@ -83,7 +86,7 @@ class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
                     total = page.totalSize ?: (start + page.metadata.size)
                     error = null
                 }
-                .onFailure { if (items.isEmpty()) error = "Error cargando la biblioteca: ${it.message}" }
+                .onFailure { if (items.isEmpty()) error = AppGraph.str(R.string.library_error, it.message.orEmpty()) }
         }
     }
 
@@ -103,15 +106,15 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, vm: LibraryViewModel = viewMod
             Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
             vm.total?.let {
                 Spacer(Modifier.width(16.dp))
-                Text("$it títulos", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.width(32.dp))
-            FilterChip(selected = vm.unwatchedOnly, onClick = vm::toggleUnwatched) { Text("Sin ver") }
+            FilterChip(selected = vm.unwatchedOnly, onClick = vm::toggleUnwatched) { Text(stringResource(R.string.library_unwatched)) }
         }
         when {
             vm.error != null -> CenteredMessage(vm.error!!)
-            vm.items.isEmpty() && vm.total == null -> CenteredMessage("Cargando…")
-            vm.items.isEmpty() -> CenteredMessage("No hay nada aquí")
+            vm.items.isEmpty() && vm.total == null -> CenteredMessage(stringResource(R.string.loading))
+            vm.items.isEmpty() -> CenteredMessage(stringResource(R.string.library_empty))
             else -> LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
                 contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),

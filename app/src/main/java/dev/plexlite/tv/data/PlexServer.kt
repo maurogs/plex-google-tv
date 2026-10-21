@@ -115,6 +115,20 @@ class PlexServer(val saved: SavedServer, private val identity: PlexIdentity) {
         Http.fetch(request(url).put(ByteArray(0).toRequestBody()).build())
     }
 
+    suspend fun selectSubtitleStream(partId: Long, subtitleStreamId: Long) {
+        val url = url("/library/parts/$partId", "allParts" to "1", "subtitleStreamID" to subtitleStreamId.toString())
+        Http.fetch(request(url).put(ByteArray(0).toRequestBody()).build())
+    }
+
+    suspend fun searchSubtitles(ratingKey: String, language: String): List<Stream> =
+        get("/library/metadata/$ratingKey/subtitles", "language" to language, "hearingImpaired" to "0", "forced" to "0")
+            .streams.filter { it.key != null }
+
+    suspend fun downloadSubtitle(ratingKey: String, candidateKey: String) {
+        val url = url("/library/metadata/$ratingKey/subtitles", "key" to candidateKey)
+        Http.fetch(request(url).put(ByteArray(0).toRequestBody()).build())
+    }
+
     suspend fun scrobble(ratingKey: String, watched: Boolean) {
         val path = if (watched) "/:/scrobble" else "/:/unscrobble"
         Http.fetch(request(url(path, "key" to ratingKey, "identifier" to "com.plexapp.plugins.library")).build())

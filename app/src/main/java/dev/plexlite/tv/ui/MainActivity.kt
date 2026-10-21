@@ -1,5 +1,6 @@
 package dev.plexlite.tv.ui
 
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,11 +11,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dev.plexlite.tv.data.AppGraph
+import dev.plexlite.tv.data.AppLocale
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.player.PlayerActivity
 import dev.plexlite.tv.ui.detail.DetailScreen
@@ -26,6 +30,10 @@ import dev.plexlite.tv.ui.theme.Background
 import dev.plexlite.tv.ui.theme.PlexLiteTheme
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase, AppGraph.prefs.language))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +48,17 @@ class MainActivity : ComponentActivity() {
                                 nav.navigate("home") { popUpTo(0) { inclusive = true } }
                             })
                         }
+                        composable(
+                            "pickServer",
+                            arguments = listOf(navArgument("pick") {
+                                type = NavType.BoolType
+                                defaultValue = true
+                            }),
+                        ) {
+                            LoginScreen(onDone = {
+                                nav.navigate("home") { popUpTo(0) { inclusive = true } }
+                            })
+                        }
                         composable("home") {
                             HomeScreen(
                                 onOpenSection = { section ->
@@ -47,6 +66,11 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onOpenItem = { openItem(nav, it) },
                                 onOpenSettings = { nav.navigate("settings") },
+                                onChangeServer = { nav.navigate("pickServer") },
+                                onLanguageChanged = { tag ->
+                                    AppGraph.setLanguage(tag)
+                                    recreate()
+                                },
                             )
                         }
                         composable("library/{id}?title={title}&type={type}") {
@@ -57,10 +81,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("settings") {
                             SettingsScreen(
-                                onChangeServer = {
-                                    AppGraph.forgetServer()
-                                    nav.navigate("login") { popUpTo(0) { inclusive = true } }
-                                },
+                                onChangeServer = { nav.navigate("pickServer") },
                                 onSignOut = {
                                     AppGraph.signOut()
                                     nav.navigate("login") { popUpTo(0) { inclusive = true } }

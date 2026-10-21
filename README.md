@@ -17,6 +17,10 @@ A lightweight native Plex client for Google TV / Android TV (Kotlin + Jetpack Co
   (~2 Mbps) is only a last resort, and when used it forces a low quality.
 - Skip intro / credits (OK button), auto-play next episode, resume, progress synced with Plex,
   external subtitles (.srt) in direct play, audio and subtitle track selection.
+- Subtitle search and download through the Plex server's OpenSubtitles agent, and four subtitle sizes.
+- Localized UI in 10 languages (English, Spanish, French, German, Italian, Portuguese, Russian,
+  Mandarin Chinese, Arabic, Hindi), with right-to-left layout for Arabic. The app
+  language is picked from the server menu on the home screen and defaults to the system language.
 
 ## Build
 
