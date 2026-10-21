@@ -1,11 +1,27 @@
 package dev.plexlite.tv.ui.library
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import dev.plexlite.tv.ui.components.ToolbarChip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,7 +63,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.tv.material3.Surface
@@ -69,7 +84,6 @@ import dev.plexlite.tv.ui.home.HeroBackdrop
 import dev.plexlite.tv.ui.home.DebouncedHero
 import dev.plexlite.tv.ui.home.LibraryBar
 import dev.plexlite.tv.ui.home.HubFeed
-import dev.plexlite.tv.ui.home.LibraryChip
 import dev.plexlite.tv.ui.home.FeedFocus
 import dev.plexlite.tv.ui.home.toFeedRow
 import kotlinx.coroutines.Job
@@ -102,6 +116,8 @@ class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
     var lastFocusedIndex = 0
     /** Set when the user switches tabs, so the new tab keeps focus on the tab chip instead of the content. */
     var focusTabOnEnter = false
+    /** The library bar is hidden while browsing the content; Back or ↑ from the tabs brings it back. */
+    var barVisible by mutableStateOf(false)
     private var loadJob: Job? = null
     private var browseStarted = false
     private var recommendedJob: Job? = null
@@ -213,6 +229,7 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
         if (tab == LibraryTab.RECOMMENDED) vm.loadRecommended()
         onPauseOrDispose { }
     }
+    BackHandler(enabled = !vm.barVisible) { vm.barVisible = true }
     when (tab) {
         LibraryTab.RECOMMENDED -> RecommendedTab(onOpenItem, actions, vm)
         LibraryTab.BROWSE -> BrowseTab(onOpenItem, actions, vm)
@@ -220,29 +237,84 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
 }
 
 @Composable
-private fun TitleRow(vm: LibraryViewModel, focusTab: Boolean, extra: @Composable RowScope.() -> Unit = {}) {
+private fun LibraryHeader(vm: LibraryViewModel, actions: HeaderActions) {
+    AnimatedVisibility(
+        visible = vm.barVisible,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        Column {
+            LibraryBar(selectedKey = vm.sectionId, actions = actions, focusSelected = true)
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun TitleRow(vm: LibraryViewModel, focusTab: Boolean) {
     val tabFocus = remember { FocusRequester() }
     fun select(tab: LibraryTab) {
         if (AppGraph.libraryTab == tab) return
         vm.focusTabOnEnter = true
         AppGraph.libraryTab = tab
     }
-    Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 48.dp)
+            .onFocusChanged { if (it.hasFocus) vm.barVisible = false }
+            .onPreviewKeyEvent {
+                val reveal = !vm.barVisible && it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown
+                if (reveal) vm.barVisible = true
+                reveal
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
-        Spacer(Modifier.width(24.dp))
+        Spacer(Modifier.width(20.dp))
+        Box(Modifier.size(width = 1.dp, height = 28.dp).background(Color.White.copy(alpha = 0.25f)))
+        Spacer(Modifier.width(8.dp))
         LibraryTab.entries.forEach { tab ->
             val selected = AppGraph.libraryTab == tab
-            LibraryChip(
+            TabLabel(
                 title = stringResource(if (tab == LibraryTab.RECOMMENDED) R.string.library_tab_recommended else R.string.library_tab_browse),
                 selected = selected,
                 onClick = { select(tab) },
                 modifier = if (selected) Modifier.focusRequester(tabFocus) else Modifier,
             )
-            Spacer(Modifier.width(12.dp))
         }
-        extra()
     }
     LaunchedEffect(Unit) { if (focusTab) runCatching { tabFocus.requestFocus() } }
+}
+
+/** Text tab: the selected one is white with an accent underline; focus adds a soft highlight. */
+@Composable
+private fun TabLabel(title: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = onClick,
+        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = Color.Transparent,
+            contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            focusedContainerColor = Color.White.copy(alpha = 0.16f),
+            focusedContentColor = Color.White,
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.width(IntrinsicSize.Max).padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+            Spacer(Modifier.height(4.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(if (selected) Accent else Color.Transparent, RoundedCornerShape(2.dp)),
+            )
+        }
+    }
 }
 
 @Composable
@@ -250,8 +322,7 @@ private fun RecommendedTab(onOpenItem: (Metadata) -> Unit, actions: HeaderAction
     val hubs = vm.recommended
     val focusTab = remember { vm.focusTabOnEnter.also { vm.focusTabOnEnter = false } }
     val header: @Composable () -> Unit = {
-        LibraryBar(selectedKey = vm.sectionId, actions = actions)
-        Spacer(Modifier.height(16.dp))
+        LibraryHeader(vm, actions)
         TitleRow(vm, focusTab)
     }
     if (hubs.isNullOrEmpty()) {
@@ -266,6 +337,7 @@ private fun RecommendedTab(onOpenItem: (Metadata) -> Unit, actions: HeaderAction
             onOpenItem = onOpenItem,
             heroHeight = 150.dp,
             focusFirstCard = !focusTab,
+            onRowsFocused = { vm.barVisible = false },
             header = header,
         )
     }
@@ -285,31 +357,32 @@ private fun BrowseTab(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm
     Box(Modifier.fillMaxSize()) {
         DebouncedHero(focusedItem, 400) { HeroBackdrop(it, alpha = 0.35f, widthFraction = 0.8f, heightFraction = 0.8f) }
         Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
-            LibraryBar(selectedKey = vm.sectionId, actions = actions)
-            Spacer(Modifier.height(16.dp))
-            TitleRow(vm, focusTab) {
-                vm.total?.let {
-                    Spacer(Modifier.width(12.dp))
-                    Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
+            LibraryHeader(vm, actions)
+            TitleRow(vm, focusTab)
             Spacer(Modifier.height(12.dp))
-            Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.padding(horizontal = 48.dp).onFocusChanged { if (it.hasFocus) vm.barVisible = false },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 val filterLabel = when {
                     vm.unwatchedOnly && vm.isShowLibrary -> R.string.library_all_shows
                     vm.unwatchedOnly -> R.string.library_all_movies
                     vm.isShowLibrary -> R.string.library_only_unwatched_shows
                     else -> R.string.library_only_unwatched_movies
                 }
-                OutlinedButton(onClick = vm::toggleUnwatched) { Text(stringResource(filterLabel)) }
-                Spacer(Modifier.width(16.dp))
+                ToolbarChip(R.drawable.ic_filter, stringResource(filterLabel), onClick = vm::toggleUnwatched)
+                Spacer(Modifier.width(12.dp))
                 SortButton(vm.sort, vm::selectSort)
+                vm.total?.let {
+                    Spacer(Modifier.width(20.dp))
+                    Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             when {
                 vm.error != null -> CenteredMessage(vm.error!!)
                 vm.items.isEmpty() && vm.total == null -> CenteredMessage(stringResource(R.string.loading))
                 vm.items.isEmpty() -> CenteredMessage(stringResource(R.string.library_empty))
-                else -> Row(Modifier.fillMaxSize()) {
+                else -> Row(Modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) vm.barVisible = false }) {
                     val hasRail = vm.letters.size > 1
                     LazyVerticalGrid(
                         state = gridState,
@@ -359,9 +432,12 @@ private fun BrowseTab(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm
 private fun SortButton(current: LibrarySort, onSelect: (LibrarySort) -> Unit) {
     val popup = rememberPopupState()
     Box {
-        OutlinedButton(onClick = popup::show, modifier = Modifier.focusRequester(popup.anchorFocus)) {
-            Text(stringResource(R.string.library_sort_by, stringResource(current.labelRes)) + "  ▾")
-        }
+        ToolbarChip(
+            R.drawable.ic_sort,
+            stringResource(R.string.library_sort_by, stringResource(current.labelRes)) + "  ▾",
+            onClick = popup::show,
+            modifier = Modifier.focusRequester(popup.anchorFocus),
+        )
         if (popup.open) {
             MenuPopup(
                 rows = LibrarySort.entries.map { option ->
@@ -371,7 +447,7 @@ private fun SortButton(current: LibrarySort, onSelect: (LibrarySort) -> Unit) {
                     }
                 },
                 onDismiss = popup::dismiss,
-                offsetY = 56.dp,
+                offsetY = 48.dp,
                 width = 320.dp,
             )
         }

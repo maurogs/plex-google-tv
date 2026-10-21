@@ -56,6 +56,7 @@ import dev.plexlite.tv.ui.components.CardStyle
 import dev.plexlite.tv.ui.components.MediaCard
 import dev.plexlite.tv.ui.components.MenuPopup
 import dev.plexlite.tv.ui.components.PopupRow
+import dev.plexlite.tv.ui.components.ToolbarChip
 import dev.plexlite.tv.ui.components.rememberPopupState
 import dev.plexlite.tv.ui.theme.Accent
 import dev.plexlite.tv.ui.theme.SurfaceColor
@@ -148,25 +149,8 @@ private fun streamLabel(stream: Stream): String =
 @Composable
 private fun StreamChip(icon: Int, label: String, rows: List<PopupRow>) {
     val popup = rememberPopupState()
-    val shape = RoundedCornerShape(8.dp)
     Box {
-        Surface(
-            onClick = popup::show,
-            shape = ClickableSurfaceDefaults.shape(shape),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = SurfaceColor,
-                contentColor = Color.White,
-                focusedContainerColor = Color.White,
-                focusedContentColor = Color.Black,
-            ),
-            modifier = Modifier.focusRequester(popup.anchorFocus),
-        ) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
+        ToolbarChip(icon, label, onClick = popup::show, modifier = Modifier.focusRequester(popup.anchorFocus))
         if (popup.open) {
             MenuPopup(
                 rows = rows.map { row ->

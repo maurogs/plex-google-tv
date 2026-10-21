@@ -90,6 +90,9 @@ hints use the OK button.
 - Each library has two tabs: "Recommended" (default; the server's section hubs, Continue watching first) and
   "Library" (full grid, filter, sort, A–Z). The tab is remembered for the session across libraries, not persisted.
   "Categories" was declined.
+- Inside a library the library bar is hidden; Back or ↑ from the tabs shows it (focus on the current library),
+  Back again goes Home. Tabs are text tabs (accent underline); filter/sort are compact `ToolbarChip`s — avoid
+  rows of identical pill buttons.
 - Organize libraries: OK enters move mode (↑↓, OK drops, Back cancels); eye button on the left hides/shows.
   Layout is stored per user and per server; hidden libraries disappear from the bar and from Home rows
   (global rows just lose those items); "Continue watching" always shows everything.

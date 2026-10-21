@@ -81,3 +81,9 @@ entry for every meaningful change so future sessions keep the thread.
     `AppGraph.libraryTab` for the session only, so switching libraries keeps it. The grid controls moved to a
     second row (the sort label wrapped onto three lines otherwise), and switching tabs keeps focus on the tab.
     "Categories" was skipped (owner's call).
+29. **Hidden library bar + lighter library header** — opening a library hides the library bar so the content
+    gets the space and the focus; Back (or ↑ from the tabs) brings the bar back with focus on the current
+    library, and Back again returns Home. Owner found the row of identical pills ugly: the Recommended/Library
+    tabs are now text tabs with an accent underline (soft highlight on focus), and the unwatched filter and sort
+    use a compact rectangular `ToolbarChip` with icons (shared with the detail page's audio/subtitle chips);
+    the title count moved next to them.

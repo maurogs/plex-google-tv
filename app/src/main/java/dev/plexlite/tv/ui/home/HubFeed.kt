@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.plexlite.tv.data.Hub
@@ -55,6 +56,7 @@ fun HubFeed(
     onOpenItem: (Metadata) -> Unit,
     heroHeight: Dp = 180.dp,
     focusFirstCard: Boolean = true,
+    onRowsFocused: () -> Unit = {},
     header: @Composable () -> Unit,
 ) {
     val restore = remember { FocusRequester() }
@@ -83,7 +85,7 @@ fun HubFeed(
             CompositionLocalProvider(LocalBringIntoViewSpec provides NoVerticalBringIntoView) {
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).onFocusChanged { if (it.hasFocus) onRowsFocused() },
                     contentPadding = PaddingValues(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
