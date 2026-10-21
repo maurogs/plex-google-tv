@@ -78,6 +78,7 @@
         <item quantity="other">%d सीज़न</item>
     </plurals>
     <string name="episode_label">सी%1$d · ए%2$d</string>
+    <string name="episode_badge">ए%1$d</string>
 
     <string name="settings_quality">प्लेबैक गुणवत्ता</string>
     <string name="settings_playback">प्लेबैक</string>

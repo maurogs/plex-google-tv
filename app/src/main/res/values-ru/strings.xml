@@ -82,6 +82,7 @@
         <item quantity="other">%d сезона</item>
     </plurals>
     <string name="episode_label">С%1$d · Э%2$d</string>
+    <string name="episode_badge">Э%1$d</string>
 
     <string name="settings_quality">Качество воспроизведения</string>
     <string name="settings_playback">Воспроизведение</string>

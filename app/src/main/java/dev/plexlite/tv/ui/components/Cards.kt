@@ -75,6 +75,7 @@ fun MediaCard(
     title: String = item.cardTitle(),
     subtitle: String? = item.cardSubtitle(),
     onFocused: () -> Unit = {},
+    badge: String? = null,
 ) {
     val server = AppGraph.server
     val ratio = if (style == CardStyle.POSTER) 2f / 3f else 16f / 9f
@@ -121,6 +122,19 @@ fun MediaCard(
                                 .background(Accent),
                         )
                     }
+                }
+                badge?.let {
+                    Text(
+                        it,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
                 }
                 val unwatched = item.unwatchedLeaves
                 when {

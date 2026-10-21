@@ -57,3 +57,11 @@ entry for every meaningful change so future sessions keep the thread.
     library) next to the unwatched filter. With title sort, a compact A–Z rail on the right uses
     `/library/sections/{id}/firstCharacter` counts; jumping fetches the missing range in a single request and
     focuses the first item of that letter. The current letter is highlighted while browsing.
+23. **Dynamic hero** — Home shows the focused item's backdrop, title, metadata, summary and cast at the
+    top (debounced 250 ms in `ui/home/Hero.kt` so fast scrolling stays smooth); libraries show the focused
+    item's backdrop. Performance first: no extra requests per focus beyond the already-cached images.
+24. **Library sort + A–Z rail** — sort dropdown (`LibrarySort` in `Models.kt`) and a letter rail to jump
+    through the grid; item count next to the filter.
+25. **Clearer episodes** — episode cards show an "E1, E2…" badge next to the watched ✓, and the focused
+    episode's number, title, duration and summary appear above the row (same debounced hero mechanism).
+    Watchlist ("My Lists"), voice search and related movies were explicitly declined by the owner.

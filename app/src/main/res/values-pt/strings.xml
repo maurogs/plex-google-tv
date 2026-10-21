@@ -78,6 +78,7 @@
         <item quantity="other">%d temporadas</item>
     </plurals>
     <string name="episode_label">T%1$d · E%2$d</string>
+    <string name="episode_badge">E%1$d</string>
 
     <string name="settings_quality">Qualidade de reprodução</string>
     <string name="settings_playback">Reprodução</string>

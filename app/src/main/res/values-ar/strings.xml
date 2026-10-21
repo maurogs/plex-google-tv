@@ -86,6 +86,7 @@
         <item quantity="other">%d موسم</item>
     </plurals>
     <string name="episode_label">م%1$d · ح%2$d</string>
+    <string name="episode_badge">ح%1$d</string>
 
     <string name="settings_quality">جودة التشغيل</string>
     <string name="settings_playback">التشغيل</string>

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +53,7 @@ import dev.plexlite.tv.data.Stream
 import dev.plexlite.tv.ui.components.CardStyle
 import dev.plexlite.tv.ui.components.CenteredMessage
 import dev.plexlite.tv.ui.components.MediaCard
+import dev.plexlite.tv.ui.home.DebouncedHero
 import dev.plexlite.tv.ui.components.formatClock
 import dev.plexlite.tv.ui.components.formatDuration
 import dev.plexlite.tv.ui.theme.Background
@@ -222,19 +225,25 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                     }
                 }
                 item(key = "episodes") {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    ) {
-                        items(vm.episodes.distinctBy { it.ratingKey }, key = { it.ratingKey }) { episode ->
-                            MediaCard(
-                                item = episode,
-                                style = CardStyle.WIDE,
-                                onClick = { onPlay(episode, false) },
-                                width = 280.dp,
-                                title = "${episode.index ?: ""}. ${episode.title}",
-                                subtitle = episode.duration?.let { formatDuration(it) },
-                            )
+                    val focusedEpisode = remember(vm.selectedSeason) { mutableStateOf<Metadata?>(null) }
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        EpisodeInfo(focusedEpisode, fallback = vm.episodes.firstOrNull { !it.isWatched } ?: vm.episodes.firstOrNull())
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 48.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        ) {
+                            items(vm.episodes.distinctBy { it.ratingKey }, key = { it.ratingKey }) { episode ->
+                                MediaCard(
+                                    item = episode,
+                                    style = CardStyle.WIDE,
+                                    onClick = { onPlay(episode, false) },
+                                    width = 280.dp,
+                                    title = episode.title,
+                                    subtitle = episode.duration?.let { formatDuration(it) },
+                                    badge = episode.index?.let { stringResource(R.string.episode_badge, it) },
+                                    onFocused = { focusedEpisode.value = episode },
+                                )
+                            }
                         }
                     }
                 }
@@ -246,6 +255,37 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
 
     LaunchedEffect(item.ratingKey, playTarget != null) {
         if (playTarget != null) runCatching { playFocus.requestFocus() }
+    }
+}
+
+@Composable
+private fun EpisodeInfo(source: State<Metadata?>, fallback: Metadata?) {
+    DebouncedHero(source, 200) { focused ->
+        val episode = focused ?: fallback
+        Column(
+            Modifier
+                .padding(horizontal = 48.dp)
+                .fillMaxWidth(0.7f)
+                .height(84.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (episode == null) return@Column
+            Text(
+                listOfNotNull(
+                    episode.index?.let { stringResource(R.string.episode_badge, it) },
+                    episode.title,
+                    episode.duration?.let { formatDuration(it) },
+                ).joinToString("  ·  "),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            episode.summary?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
     }
 }
 

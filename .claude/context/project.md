@@ -43,7 +43,7 @@ a UI tailored to the owner's preferences.
 | Persistence | `data/Prefs.kt` | SharedPreferences + JSON: auth token, current server, quality, subtitle size, language, current user, per-user sessions, auto sign-in, library layouts. |
 | i18n | `data/AppLocale.kt`, `res/values*/strings.xml` | 10 languages (en default, es, fr, de, it, pt, ru, zh, ar, hi). Activities wrap their context with the chosen locale. |
 | Player | `player/PlayerActivity.kt`, `player/StreamResolver.kt`, `player/OverlayMenu.kt` | View-based (`PlayerView`) with custom controls/menus. |
-| UI | `ui/MainActivity.kt` (navigation), `ui/home`, `ui/library`, `ui/detail`, `ui/login`, `ui/profiles`, `ui/search`, `ui/settings`, `ui/components` | Compose. `HeaderActions` + `LibraryBar` shared by Home and Library screens. |
+| UI | `ui/MainActivity.kt` (navigation), `ui/home`, `ui/library`, `ui/detail`, `ui/login`, `ui/profiles`, `ui/search`, `ui/settings`, `ui/components` | Compose. `HeaderActions` + `LibraryBar` shared by Home and Library screens. `ui/home/Hero.kt` holds the debounced dynamic hero (`DebouncedHero`), reused for the focused-episode info on show pages. |
 
 ## Playback design (the core of the "speed/transcoding" fix)
 
@@ -92,6 +92,9 @@ hints use the OK button.
 - Settings: grouped rounded cards; quality and language as dropdowns; red "Sign out" at the very bottom.
 - Library filter button label describes the action ("Mostrar solo películas no vistas" / "Mostrar todas
   las películas"); alternatives B/C were offered and are still open.
+- Explicitly declined by the owner: voice search, related movies, watchlist ("My Lists"), the official app's
+  online tabs (For You / Trending / Activity, Recommended / Explore / Categories), star ratings, reviews,
+  collapsible side rail, clock. Speed and a flawless remote-control UX take priority over features.
 
 ## How we work
 

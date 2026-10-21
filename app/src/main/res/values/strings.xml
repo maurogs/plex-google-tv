@@ -80,6 +80,7 @@
         <item quantity="other">%d seasons</item>
     </plurals>
     <string name="episode_label">S%1$d · E%2$d</string>
+    <string name="episode_badge">E%1$d</string>
 
     <string name="settings_quality">Playback quality</string>
     <string name="settings_playback">Playback</string>

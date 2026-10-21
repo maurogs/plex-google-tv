@@ -76,6 +76,7 @@
         <item quantity="other">%d 季</item>
     </plurals>
     <string name="episode_label">第%1$d季 · 第%2$d集</string>
+    <string name="episode_badge">第%1$d集</string>
 
     <string name="settings_quality">播放质量</string>
     <string name="settings_playback">播放</string>
