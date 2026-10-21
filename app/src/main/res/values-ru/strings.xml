@@ -25,6 +25,19 @@
     <string name="menu_change_server">Сменить сервер</string>
     <string name="menu_app_language">Язык приложения</string>
     <string name="menu_system_language">Язык системы</string>
+    <string name="menu_change_user">Сменить пользователя</string>
+    <string name="profiles_title">Кто смотрит?</string>
+    <string name="profiles_auto">Вход как %1$s через %2$d с…</string>
+    <string name="profiles_last_used">Последний</string>
+    <string name="profiles_enter_pin">Введите PIN-код для %1$s</string>
+    <string name="profiles_wrong_pin">Неверный PIN-код</string>
+    <string name="profiles_error">Не удалось сменить пользователя: %1$s</string>
+    <string name="profiles_switching">Вход как %1$s…</string>
+    <string name="profiles_remember">Запомнить выбор и не показывать этот экран</string>
+    <string name="settings_users">Пользователи</string>
+    <string name="settings_auto_user">Входить автоматически</string>
+    <string name="settings_auto_user_on">Открывается сразу как %1$s</string>
+    <string name="settings_auto_user_off">Выбор пользователя показывается при каждом запуске</string>
 
     <string name="library_error">Ошибка загрузки медиатеки: %1$s</string>
     <plurals name="library_count">

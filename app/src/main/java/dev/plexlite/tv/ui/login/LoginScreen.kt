@@ -66,7 +66,7 @@ class LoginViewModel(savedState: SavedStateHandle) : ViewModel() {
     fun start() {
         job?.cancel()
         job = viewModelScope.launch {
-            val token = AppGraph.prefs.authToken ?: signIn() ?: return@launch
+            val token = AppGraph.plexToken ?: signIn() ?: return@launch
             loadServers(token)
         }
     }

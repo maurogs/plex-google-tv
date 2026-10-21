@@ -43,6 +43,7 @@ import androidx.tv.material3.Text
 import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.AppLocale
+import dev.plexlite.tv.ui.profiles.UserAvatar
 import dev.plexlite.tv.ui.theme.Accent
 import dev.plexlite.tv.ui.theme.SurfaceColor
 
@@ -55,6 +56,8 @@ fun ServerMenuButton(
     serverName: String,
     canChangeServer: Boolean,
     onChangeServer: () -> Unit,
+    canChangeUser: Boolean,
+    onChangeUser: () -> Unit,
     onOpenSettings: () -> Unit,
     onLanguageChanged: (String?) -> Unit,
 ) {
@@ -87,6 +90,11 @@ fun ServerMenuButton(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val user = AppGraph.prefs.currentUser
+                if (user != null && canChangeUser) {
+                    UserAvatar(user, 36.dp)
+                    Spacer(Modifier.width(12.dp))
+                }
                 Text(serverName, style = MaterialTheme.typography.headlineSmall, color = Accent, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(8.dp))
                 Text("▾", style = MaterialTheme.typography.titleLarge, color = Accent)
@@ -103,6 +111,10 @@ fun ServerMenuButton(
             val currentLanguage = AppLocale.supported.firstOrNull { it.first == currentTag }?.second ?: systemLabel
             val rows = when (page) {
                 MenuPage.MAIN -> listOfNotNull(
+                    MenuRow(stringResource(R.string.menu_change_user), AppGraph.prefs.currentUser?.title) {
+                        expanded = false
+                        onChangeUser()
+                    }.takeIf { canChangeUser },
                     MenuRow(stringResource(R.string.menu_change_server)) {
                         expanded = false
                         onChangeServer()

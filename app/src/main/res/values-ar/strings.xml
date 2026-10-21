@@ -25,6 +25,19 @@
     <string name="menu_change_server">تغيير الخادم</string>
     <string name="menu_app_language">لغة التطبيق</string>
     <string name="menu_system_language">لغة النظام</string>
+    <string name="menu_change_user">تبديل المستخدم</string>
+    <string name="profiles_title">من يشاهد؟</string>
+    <string name="profiles_auto">تسجيل الدخول باسم %1$s خلال %2$d ث…</string>
+    <string name="profiles_last_used">آخر استخدام</string>
+    <string name="profiles_enter_pin">أدخل رمز PIN الخاص بـ %1$s</string>
+    <string name="profiles_wrong_pin">رمز PIN غير صحيح</string>
+    <string name="profiles_error">تعذّر تبديل المستخدم: %1$s</string>
+    <string name="profiles_switching">جارٍ تسجيل الدخول باسم %1$s…</string>
+    <string name="profiles_remember">تذكّر اختياري وتخطَّ هذه الشاشة</string>
+    <string name="settings_users">المستخدمون</string>
+    <string name="settings_auto_user">تسجيل الدخول تلقائيًا</string>
+    <string name="settings_auto_user_on">يفتح مباشرة باسم %1$s</string>
+    <string name="settings_auto_user_off">يعرض اختيار المستخدم في كل مرة يُفتح فيها التطبيق</string>
 
     <string name="library_error">خطأ في تحميل المكتبة: %1$s</string>
     <plurals name="library_count">

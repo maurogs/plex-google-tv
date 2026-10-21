@@ -34,6 +34,8 @@ fun SettingsScreen(onChangeServer: () -> Unit, onSignOut: () -> Unit) {
     val prefs = AppGraph.prefs
     var quality by remember { mutableStateOf(prefs.quality) }
     var autoPlay by remember { mutableStateOf(prefs.autoPlayNext) }
+    var autoSignIn by remember { mutableStateOf(prefs.autoSignIn) }
+    val currentUser = prefs.currentUser
     val focus = remember { FocusRequester() }
     val server = AppGraph.server?.saved
 
@@ -66,6 +68,29 @@ fun SettingsScreen(onChangeServer: () -> Unit, onSignOut: () -> Unit) {
                 headlineContent = { Text(stringResource(R.string.settings_autoplay)) },
                 trailingContent = { Switch(checked = autoPlay, onCheckedChange = null) },
             )
+        }
+        if (currentUser != null && (AppGraph.homeUserCount ?: 0) > 1) {
+            item { Header(stringResource(R.string.settings_users)) }
+            item {
+                ListItem(
+                    selected = false,
+                    onClick = {
+                        autoSignIn = !autoSignIn
+                        prefs.autoSignIn = autoSignIn
+                    },
+                    headlineContent = { Text(stringResource(R.string.settings_auto_user)) },
+                    supportingContent = {
+                        Text(
+                            if (autoSignIn) {
+                                stringResource(R.string.settings_auto_user_on, currentUser.title)
+                            } else {
+                                stringResource(R.string.settings_auto_user_off)
+                            },
+                        )
+                    },
+                    trailingContent = { Switch(checked = autoSignIn, onCheckedChange = null) },
+                )
+            }
         }
         item { Header(stringResource(R.string.settings_server)) }
         item {

@@ -59,6 +59,8 @@ class HomeViewModel : ViewModel() {
 
     var serverCount by mutableStateOf(AppGraph.serverCount)
         private set
+    var homeUserCount by mutableStateOf(AppGraph.homeUserCount)
+        private set
 
     var lastFocused: String? = null
     private var loading = false
@@ -66,6 +68,7 @@ class HomeViewModel : ViewModel() {
     fun refresh() {
         if (loading) return
         if (serverCount == null) loadServerCount()
+        if (homeUserCount == null) loadHomeUserCount()
         loading = true
         viewModelScope.launch {
             val result = runCatching { load() }.recoverCatching {
@@ -81,8 +84,18 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    private fun loadServerCount() {
+    private fun loadHomeUserCount() {
         val token = AppGraph.prefs.authToken ?: return
+        viewModelScope.launch {
+            runCatching { AppGraph.plexTv.homeUsers(token).size }.onSuccess {
+                AppGraph.homeUserCount = it
+                homeUserCount = it
+            }
+        }
+    }
+
+    private fun loadServerCount() {
+        val token = AppGraph.plexToken ?: return
         viewModelScope.launch {
             runCatching { AppGraph.plexTv.servers(token).size }.onSuccess {
                 AppGraph.serverCount = it
@@ -106,6 +119,7 @@ fun HomeScreen(
     onOpenItem: (Metadata) -> Unit,
     onOpenSettings: () -> Unit,
     onChangeServer: () -> Unit,
+    onChangeUser: () -> Unit,
     onLanguageChanged: (String?) -> Unit,
     vm: HomeViewModel = viewModel(),
 ) {
@@ -116,7 +130,7 @@ fun HomeScreen(
 
     val content = vm.content
     when {
-        content != null -> HomeContentView(content, vm, onOpenSection, onOpenItem, onOpenSettings, onChangeServer, onLanguageChanged)
+        content != null -> HomeContentView(content, vm, onOpenSection, onOpenItem, onOpenSettings, onChangeServer, onChangeUser, onLanguageChanged)
         vm.error != null -> ErrorView(vm.error!!, onRetry = vm::refresh, onOpenSettings = onOpenSettings)
         else -> CenteredMessage(stringResource(R.string.loading))
     }
@@ -147,6 +161,7 @@ private fun HomeContentView(
     onOpenItem: (Metadata) -> Unit,
     onOpenSettings: () -> Unit,
     onChangeServer: () -> Unit,
+    onChangeUser: () -> Unit,
     onLanguageChanged: (String?) -> Unit,
 ) {
     val restore = remember { FocusRequester() }
@@ -173,6 +188,8 @@ private fun HomeContentView(
                     serverName = AppGraph.server?.saved?.name ?: stringResource(R.string.app_name),
                     canChangeServer = (vm.serverCount ?: 0) > 1,
                     onChangeServer = onChangeServer,
+                    canChangeUser = (vm.homeUserCount ?: 0) > 1,
+                    onChangeUser = onChangeUser,
                     onOpenSettings = onOpenSettings,
                     onLanguageChanged = onLanguageChanged,
                 )

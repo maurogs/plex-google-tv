@@ -25,6 +25,19 @@
     <string name="menu_change_server">Changer de serveur</string>
     <string name="menu_app_language">Langue de l\'application</string>
     <string name="menu_system_language">Langue du système</string>
+    <string name="menu_change_user">Changer d\'utilisateur</string>
+    <string name="profiles_title">Qui regarde ?</string>
+    <string name="profiles_auto">Connexion en tant que %1$s dans %2$d s…</string>
+    <string name="profiles_last_used">Dernier utilisé</string>
+    <string name="profiles_enter_pin">Saisissez le code PIN de %1$s</string>
+    <string name="profiles_wrong_pin">Code PIN incorrect</string>
+    <string name="profiles_error">Impossible de changer d\'utilisateur : %1$s</string>
+    <string name="profiles_switching">Connexion en tant que %1$s…</string>
+    <string name="profiles_remember">Mémoriser mon choix et ne plus afficher cet écran</string>
+    <string name="settings_users">Utilisateurs</string>
+    <string name="settings_auto_user">Connexion automatique</string>
+    <string name="settings_auto_user_on">S\'ouvre directement en tant que %1$s</string>
+    <string name="settings_auto_user_off">Affiche le choix de l\'utilisateur à chaque ouverture</string>
 
     <string name="library_error">Erreur lors du chargement de la bibliothèque : %1$s</string>
     <plurals name="library_count">

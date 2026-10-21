@@ -25,6 +25,7 @@ import dev.plexlite.tv.ui.detail.DetailScreen
 import dev.plexlite.tv.ui.home.HomeScreen
 import dev.plexlite.tv.ui.library.LibraryScreen
 import dev.plexlite.tv.ui.login.LoginScreen
+import dev.plexlite.tv.ui.profiles.ProfilesScreen
 import dev.plexlite.tv.ui.settings.SettingsScreen
 import dev.plexlite.tv.ui.theme.Background
 import dev.plexlite.tv.ui.theme.PlexLiteTheme
@@ -37,7 +38,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val start = if (AppGraph.prefs.authToken != null && AppGraph.server != null) "home" else "login"
+        val prefs = AppGraph.prefs
+        val skipProfiles = prefs.autoSignIn && prefs.currentUser?.isProtected == false
+        val start = when {
+            prefs.authToken == null || AppGraph.server == null -> "login"
+            skipProfiles -> "home"
+            else -> "profilesStart"
+        }
         setContent {
             PlexLiteTheme {
                 Box(Modifier.fillMaxSize().background(Background)) {
@@ -45,8 +52,20 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = nav, startDestination = start) {
                         composable("login") {
                             LoginScreen(onDone = {
-                                nav.navigate("home") { popUpTo(0) { inclusive = true } }
+                                nav.navigate("profiles") { popUpTo(0) { inclusive = true } }
                             })
+                        }
+                        composable(
+                            "profilesStart",
+                            arguments = listOf(navArgument("auto") {
+                                type = NavType.BoolType
+                                defaultValue = true
+                            }),
+                        ) {
+                            ProfilesScreen(onDone = { nav.navigate("home") { popUpTo(0) { inclusive = true } } })
+                        }
+                        composable("profiles") {
+                            ProfilesScreen(onDone = { nav.navigate("home") { popUpTo(0) { inclusive = true } } })
                         }
                         composable(
                             "pickServer",
@@ -67,6 +86,7 @@ class MainActivity : ComponentActivity() {
                                 onOpenItem = { openItem(nav, it) },
                                 onOpenSettings = { nav.navigate("settings") },
                                 onChangeServer = { nav.navigate("pickServer") },
+                                onChangeUser = { nav.navigate("profiles") },
                                 onLanguageChanged = { tag ->
                                     AppGraph.setLanguage(tag)
                                     recreate()

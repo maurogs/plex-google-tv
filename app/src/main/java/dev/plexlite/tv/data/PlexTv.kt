@@ -22,6 +22,17 @@ class PlexTv(private val identity: PlexIdentity) {
             .sortedWith(compareByDescending<Resource> { it.owned }.thenByDescending { it.presence }.thenBy { it.name })
     }
 
+    suspend fun account(token: String): HomeUser = Http.fetchJson(request("https://plex.tv/api/v2/user", token).build())
+
+    suspend fun homeUsers(token: String): List<HomeUser> =
+        Http.fetchJson<HomeUsers>(request("https://plex.tv/api/v2/home/users", token).build()).users
+
+    suspend fun switchUser(token: String, uuid: String, pin: String?): String {
+        val url = "https://plex.tv/api/v2/home/users/$uuid/switch" + (pin?.let { "?pin=$it" } ?: "")
+        val switched: SwitchedUser = Http.fetchJson(request(url, token).post(ByteArray(0).toRequestBody()).build())
+        return switched.authToken ?: switched.authenticationToken ?: throw HttpException(401, "No token")
+    }
+
     private fun request(url: String, token: String?): Request.Builder =
         identity.apply(Request.Builder().url(url), token)
 }

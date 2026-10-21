@@ -25,6 +25,19 @@
     <string name="menu_change_server">सर्वर बदलें</string>
     <string name="menu_app_language">ऐप की भाषा</string>
     <string name="menu_system_language">सिस्टम की भाषा</string>
+    <string name="menu_change_user">उपयोगकर्ता बदलें</string>
+    <string name="profiles_title">कौन देख रहा है?</string>
+    <string name="profiles_auto">%2$d सेकंड में %1$s के रूप में साइन इन हो रहा है…</string>
+    <string name="profiles_last_used">पिछली बार उपयोग किया गया</string>
+    <string name="profiles_enter_pin">%1$s का PIN डालें</string>
+    <string name="profiles_wrong_pin">गलत PIN</string>
+    <string name="profiles_error">उपयोगकर्ता नहीं बदला जा सका: %1$s</string>
+    <string name="profiles_switching">%1$s के रूप में साइन इन हो रहा है…</string>
+    <string name="profiles_remember">मेरी पसंद याद रखें और यह स्क्रीन छोड़ दें</string>
+    <string name="settings_users">उपयोगकर्ता</string>
+    <string name="settings_auto_user">अपने आप साइन इन करें</string>
+    <string name="settings_auto_user_on">सीधे %1$s के रूप में खुलता है</string>
+    <string name="settings_auto_user_off">हर बार ऐप खोलने पर उपयोगकर्ता चुनने का विकल्प दिखाता है</string>
 
     <string name="library_error">लाइब्रेरी लोड करने में त्रुटि: %1$s</string>
     <plurals name="library_count">

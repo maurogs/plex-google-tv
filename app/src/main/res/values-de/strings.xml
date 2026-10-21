@@ -25,6 +25,19 @@
     <string name="menu_change_server">Server wechseln</string>
     <string name="menu_app_language">App-Sprache</string>
     <string name="menu_system_language">Systemsprache</string>
+    <string name="menu_change_user">Benutzer wechseln</string>
+    <string name="profiles_title">Wer schaut?</string>
+    <string name="profiles_auto">Anmeldung als %1$s in %2$d s…</string>
+    <string name="profiles_last_used">Zuletzt verwendet</string>
+    <string name="profiles_enter_pin">PIN für %1$s eingeben</string>
+    <string name="profiles_wrong_pin">Falsche PIN</string>
+    <string name="profiles_error">Benutzerwechsel fehlgeschlagen: %1$s</string>
+    <string name="profiles_switching">Anmeldung als %1$s…</string>
+    <string name="profiles_remember">Auswahl merken und diesen Bildschirm überspringen</string>
+    <string name="settings_users">Benutzer</string>
+    <string name="settings_auto_user">Automatisch anmelden</string>
+    <string name="settings_auto_user_on">Öffnet direkt als %1$s</string>
+    <string name="settings_auto_user_off">Zeigt bei jedem Start die Benutzerauswahl</string>
 
     <string name="library_error">Fehler beim Laden der Mediathek: %1$s</string>
     <plurals name="library_count">

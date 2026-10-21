@@ -31,6 +31,9 @@ object AppGraph {
         private set
 
     var serverCount: Int? = null
+    var homeUserCount: Int? = null
+
+    val plexToken: String? get() = prefs.userToken ?: prefs.authToken
 
     fun init(context: Context) {
         appContext = context
@@ -47,12 +50,39 @@ object AppGraph {
     fun useServer(saved: SavedServer) {
         prefs.server = saved
         server = PlexServer(saved, identity)
+        val user = prefs.currentUser ?: return
+        val token = plexToken ?: return
+        if (!user.isProtected) prefs.sessions = prefs.sessions + (user.uuid to UserSession(token, saved))
+    }
+
+    suspend fun activateUser(user: HomeUser, pin: String?) {
+        val cached = prefs.sessions[user.uuid]
+        if (!user.isProtected && cached != null) {
+            prefs.userToken = cached.token
+            prefs.currentUser = user
+            useServer(cached.server)
+            return
+        }
+        val accountToken = prefs.authToken ?: error(str(R.string.no_server))
+        val token = if (user.uuid == prefs.accountUuid && !user.isProtected) {
+            accountToken
+        } else {
+            plexTv.switchUser(accountToken, user.uuid, pin)
+        }
+        val servers = plexTv.servers(token)
+        val target = servers.firstOrNull { it.clientIdentifier == prefs.server?.id } ?: servers.firstOrNull()
+            ?: error(str(R.string.login_error_no_servers))
+        val saved = picker.pick(target) ?: error(str(R.string.login_error_connect, target.name))
+        serverCount = servers.size
+        prefs.userToken = token
+        prefs.currentUser = user
+        useServer(saved)
     }
 
     suspend fun reconnect(): Boolean = reconnectLock.withLock {
         val current = prefs.server ?: return false
         if (picker.isReachable(current)) return true
-        val token = prefs.authToken ?: return false
+        val token = plexToken ?: return false
         val resource = runCatching { plexTv.servers(token) }.getOrNull()
             ?.firstOrNull { it.clientIdentifier == current.id } ?: return false
         val saved = picker.pick(resource) ?: return false
@@ -71,6 +101,9 @@ object AppGraph {
 
     fun signOut() {
         prefs.authToken = null
+        prefs.clearUsers()
+        homeUserCount = null
+        serverCount = null
         prefs.server = null
         server = null
     }

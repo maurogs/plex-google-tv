@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.core.content.edit
 import dev.plexlite.tv.R
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
+@Serializable
 data class SavedServer(
     val id: String,
     val name: String,
@@ -41,6 +43,9 @@ enum class SubtitleSize(@StringRes private val labelRes: Int, val scale: Float) 
 
     val label: String get() = AppGraph.str(labelRes)
 }
+
+@Serializable
+data class UserSession(val token: String, val server: SavedServer)
 
 class Prefs(context: Context) {
     private val prefs = context.getSharedPreferences("plexlite", Context.MODE_PRIVATE)
@@ -92,6 +97,36 @@ class Prefs(context: Context) {
         get() = prefs.getString(KEY_LANGUAGE, null)
         set(value) = prefs.edit { putString(KEY_LANGUAGE, value) }
 
+    var autoSignIn: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_SIGN_IN, false)
+        set(value) = prefs.edit { putBoolean(KEY_AUTO_SIGN_IN, value) }
+
+    var accountUuid: String?
+        get() = prefs.getString(KEY_ACCOUNT_UUID, null)
+        set(value) = prefs.edit { putString(KEY_ACCOUNT_UUID, value) }
+
+    var userToken: String?
+        get() = prefs.getString(KEY_USER_TOKEN, null)
+        set(value) = prefs.edit { putString(KEY_USER_TOKEN, value) }
+
+    var currentUser: HomeUser?
+        get() = prefs.getString(KEY_CURRENT_USER, null)?.let { runCatching { Http.json.decodeFromString<HomeUser>(it) }.getOrNull() }
+        set(value) = prefs.edit { putString(KEY_CURRENT_USER, value?.let { Http.json.encodeToString(it) }) }
+
+    var sessions: Map<String, UserSession>
+        get() = prefs.getString(KEY_SESSIONS, null)
+            ?.let { runCatching { Http.json.decodeFromString<Map<String, UserSession>>(it) }.getOrNull() }
+            .orEmpty()
+        set(value) = prefs.edit { putString(KEY_SESSIONS, Http.json.encodeToString(value)) }
+
+    fun clearUsers() = prefs.edit {
+        remove(KEY_ACCOUNT_UUID)
+        remove(KEY_USER_TOKEN)
+        remove(KEY_CURRENT_USER)
+        remove(KEY_SESSIONS)
+        remove(KEY_AUTO_SIGN_IN)
+    }
+
     var subtitleSize: SubtitleSize
         get() = prefs.getString(KEY_SUBTITLE_SIZE, null)?.let { name -> SubtitleSize.entries.firstOrNull { it.name == name } } ?: SubtitleSize.NORMAL
         set(value) = prefs.edit { putString(KEY_SUBTITLE_SIZE, value.name) }
@@ -108,5 +143,10 @@ class Prefs(context: Context) {
         const val KEY_AUTOPLAY_NEXT = "autoplay_next"
         const val KEY_SUBTITLE_SIZE = "subtitle_size"
         const val KEY_LANGUAGE = "language"
+        const val KEY_ACCOUNT_UUID = "account_uuid"
+        const val KEY_USER_TOKEN = "user_token"
+        const val KEY_CURRENT_USER = "current_user"
+        const val KEY_SESSIONS = "sessions"
+        const val KEY_AUTO_SIGN_IN = "auto_sign_in"
     }
 }

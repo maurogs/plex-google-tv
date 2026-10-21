@@ -27,6 +27,19 @@
     <string name="menu_change_server">Change server</string>
     <string name="menu_app_language">App language</string>
     <string name="menu_system_language">System language</string>
+    <string name="menu_change_user">Switch user</string>
+    <string name="profiles_title">Who\'s watching?</string>
+    <string name="profiles_auto">Signing in as %1$s in %2$d s…</string>
+    <string name="profiles_last_used">Last used</string>
+    <string name="profiles_enter_pin">Enter the PIN for %1$s</string>
+    <string name="profiles_wrong_pin">Wrong PIN</string>
+    <string name="profiles_error">Couldn\'t switch user: %1$s</string>
+    <string name="profiles_switching">Signing in as %1$s…</string>
+    <string name="profiles_remember">Remember my choice and skip this screen</string>
+    <string name="settings_users">Users</string>
+    <string name="settings_auto_user">Sign in automatically</string>
+    <string name="settings_auto_user_on">Opens directly as %1$s</string>
+    <string name="settings_auto_user_off">Shows the user selection on every launch</string>
 
     <string name="library_error">Error loading the library: %1$s</string>
     <plurals name="library_count">

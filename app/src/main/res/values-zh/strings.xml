@@ -25,6 +25,19 @@
     <string name="menu_change_server">切换服务器</string>
     <string name="menu_app_language">应用语言</string>
     <string name="menu_system_language">系统语言</string>
+    <string name="menu_change_user">切换用户</string>
+    <string name="profiles_title">谁在观看？</string>
+    <string name="profiles_auto">%2$d 秒后以 %1$s 身份登录…</string>
+    <string name="profiles_last_used">上次使用</string>
+    <string name="profiles_enter_pin">请输入 %1$s 的 PIN 码</string>
+    <string name="profiles_wrong_pin">PIN 码错误</string>
+    <string name="profiles_error">无法切换用户：%1$s</string>
+    <string name="profiles_switching">正在以 %1$s 身份登录…</string>
+    <string name="profiles_remember">记住我的选择，不再显示此页面</string>
+    <string name="settings_users">用户</string>
+    <string name="settings_auto_user">自动登录</string>
+    <string name="settings_auto_user_on">直接以 %1$s 身份打开</string>
+    <string name="settings_auto_user_off">每次打开应用时显示用户选择</string>
 
     <string name="library_error">加载媒体库时出错：%1$s</string>
     <plurals name="library_count">

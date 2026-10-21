@@ -212,3 +212,24 @@ data class Connection(
     val relay: Boolean = false,
     @SerialName("IPv6") val ipv6: Boolean = false,
 )
+
+@Serializable
+data class HomeUser(
+    val id: Long = 0,
+    val uuid: String = "",
+    val title: String = "",
+    val username: String? = null,
+    val thumb: String? = null,
+    val admin: Boolean = false,
+    val restricted: Boolean = false,
+    @SerialName("protected") val isProtected: Boolean = false,
+)
+
+@Serializable
+data class HomeUsers(val users: List<HomeUser> = emptyList())
+
+@Serializable
+data class SwitchedUser(
+    val authToken: String? = null,
+    val authenticationToken: String? = null,
+)

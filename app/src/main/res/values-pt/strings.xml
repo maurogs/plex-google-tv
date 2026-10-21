@@ -25,6 +25,19 @@
     <string name="menu_change_server">Trocar de servidor</string>
     <string name="menu_app_language">Idioma do app</string>
     <string name="menu_system_language">Idioma do sistema</string>
+    <string name="menu_change_user">Trocar de usuário</string>
+    <string name="profiles_title">Quem está assistindo?</string>
+    <string name="profiles_auto">Entrando como %1$s em %2$d s…</string>
+    <string name="profiles_last_used">Último usado</string>
+    <string name="profiles_enter_pin">Digite o PIN de %1$s</string>
+    <string name="profiles_wrong_pin">PIN incorreto</string>
+    <string name="profiles_error">Não foi possível trocar de usuário: %1$s</string>
+    <string name="profiles_switching">Entrando como %1$s…</string>
+    <string name="profiles_remember">Lembrar minha escolha e pular esta tela</string>
+    <string name="settings_users">Usuários</string>
+    <string name="settings_auto_user">Entrar automaticamente</string>
+    <string name="settings_auto_user_on">Abre diretamente como %1$s</string>
+    <string name="settings_auto_user_off">Mostra a seleção de usuário sempre que o app é aberto</string>
 
     <string name="library_error">Erro ao carregar a biblioteca: %1$s</string>
     <plurals name="library_count">
