@@ -1,5 +1,10 @@
 package dev.plexlite.tv.ui.detail
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,8 +22,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -31,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
@@ -180,7 +191,7 @@ fun CastRow(roles: List<Role>) {
         SectionTitle(stringResource(R.string.detail_cast))
         LazyRow(
             contentPadding = PaddingValues(horizontal = 48.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(roles.take(30), key = { "${it.tag}|${it.role}" }) { role -> CastCard(role) }
         }
@@ -189,29 +200,29 @@ fun CastRow(roles: List<Role>) {
 
 @Composable
 private fun CastCard(role: Role) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(132.dp)) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(104.dp)) {
         Surface(
             onClick = {},
             shape = ClickableSurfaceDefaults.shape(CircleShape),
             colors = ClickableSurfaceDefaults.colors(containerColor = SurfaceColor, focusedContainerColor = SurfaceColor),
             border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = CircleShape)),
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
-            modifier = Modifier.size(112.dp),
+            modifier = Modifier.size(72.dp),
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(role.tag.take(1).uppercase(), style = MaterialTheme.typography.headlineMedium, color = Accent)
+                Text(role.tag.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = Accent)
                 AsyncImage(
-                    model = AppGraph.server?.photoUrl(role.thumb, 224, 224),
+                    model = AppGraph.server?.photoUrl(role.thumb, 144, 144),
                     contentDescription = role.tag,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
-        Text(role.tag, style = MaterialTheme.typography.labelLarge, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text(role.tag, style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         role.role?.let {
-            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         }
     }
 }
@@ -249,4 +260,56 @@ fun SectionTitle(text: String) {
         color = Color.White,
         modifier = Modifier.padding(start = 48.dp, bottom = 10.dp),
     )
+}
+
+@Composable
+fun ActionButton(
+    icon: Int,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false,
+    iconTint: Color = Color.Unspecified,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(50)
+    Surface(
+        onClick = onClick,
+        shape = ClickableSurfaceDefaults.shape(shape),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (primary) Color.White else Color.White.copy(alpha = 0.12f),
+            contentColor = if (primary) Color.Black else Color.White,
+            focusedContainerColor = if (primary) Accent else Color.White,
+            focusedContentColor = Color.Black,
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
+        modifier = modifier.onFocusChanged { focused = it.isFocused },
+    ) {
+        Row(
+            modifier = Modifier
+                .height(48.dp)
+                .padding(horizontal = if (primary) 20.dp else 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(icon),
+                contentDescription = label,
+                tint = if (iconTint != Color.Unspecified && !focused) iconTint else LocalContentColor.current,
+                modifier = Modifier.size(24.dp),
+            )
+            AnimatedVisibility(
+                visible = primary || focused,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally(),
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = 10.dp, end = 4.dp),
+                )
+            }
+        }
+    }
 }

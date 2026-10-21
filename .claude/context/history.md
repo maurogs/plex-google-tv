@@ -65,3 +65,8 @@ entry for every meaningful change so future sessions keep the thread.
 25. **Clearer episodes** — episode cards show an "E1, E2…" badge next to the watched ✓, and the focused
     episode's number, title, duration and summary appear above the row (same debounced hero mechanism).
     Watchlist ("My Lists"), voice search and related movies were explicitly declined by the owner.
+26. **Detail page layout fix** — the title was scrolled off-screen because Compose for TV's default
+    bring-into-view pivot moved the focused Play button towards the middle; the detail list now uses a
+    minimal-scroll `BringIntoViewSpec`. Action row redesigned: white primary pill (accent when focused) and
+    round icon buttons (restart, watched) that expand to show their label on focus; quality/audio/subtitle
+    chips moved to their own compact row (the subtitle chip no longer truncates to "…"); cast photos 112 → 72 dp.

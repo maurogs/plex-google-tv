@@ -1,5 +1,8 @@
 package dev.plexlite.tv.ui.detail
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -56,6 +60,7 @@ import dev.plexlite.tv.ui.components.MediaCard
 import dev.plexlite.tv.ui.home.DebouncedHero
 import dev.plexlite.tv.ui.components.formatClock
 import dev.plexlite.tv.ui.components.formatDuration
+import dev.plexlite.tv.ui.theme.Accent
 import dev.plexlite.tv.ui.theme.Background
 import kotlinx.coroutines.launch
 
@@ -139,7 +144,7 @@ fun DetailScreen(onPlay: (Metadata, Boolean) -> Unit, vm: DetailViewModel = view
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata, Boolean) -> Unit) {
     val server = AppGraph.server
@@ -160,8 +165,9 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                 Brush.horizontalGradient(0f to Background, 0.75f to Background.copy(alpha = 0.6f), 1f to Color.Transparent),
             ),
         )
+        CompositionLocalProvider(LocalBringIntoViewSpec provides MinimalScroll) {
         LazyColumn(
-            contentPadding = PaddingValues(vertical = 48.dp),
+            contentPadding = PaddingValues(vertical = 40.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -172,7 +178,7 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                     Text(metaLine(item), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     RatingsRow(item)
                     item.summary?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, style = MaterialTheme.typography.bodyLarge, color = Color.White, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                        Text(it, style = MaterialTheme.typography.bodyLarge, color = Color.White, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     }
                     item.directors.takeIf { it.isNotEmpty() }?.let { directors ->
                         Text(
@@ -183,9 +189,9 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                     }
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.padding(top = 8.dp),
                     ) {
                         if (playTarget != null) {
                             val resume = playTarget.viewOffset?.takeIf { it > 0 }
@@ -195,18 +201,30 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
                                 if (isShow) playTarget.episodeLabel?.let { append(" $it") }
                                 if (resume != null) append(" (${formatClock(resume)})")
                             }
-                            Button(onClick = { onPlay(playTarget, false) }, modifier = Modifier.focusRequester(playFocus)) { Text(label) }
+                            ActionButton(
+                                icon = R.drawable.ic_play,
+                                label = label,
+                                onClick = { onPlay(playTarget, false) },
+                                primary = true,
+                                modifier = Modifier.focusRequester(playFocus),
+                            )
                             if (resume != null) {
-                                OutlinedButton(onClick = { onPlay(playTarget, true) }) { Text(stringResource(R.string.detail_from_start)) }
+                                ActionButton(
+                                    icon = R.drawable.ic_replay,
+                                    label = stringResource(R.string.detail_from_start),
+                                    onClick = { onPlay(playTarget, true) },
+                                )
                             }
                         }
-                        OutlinedButton(onClick = vm::toggleWatched) {
-                            Text(stringResource(if (item.isWatched) R.string.detail_mark_unwatched else R.string.detail_mark_watched))
-                        }
-                        if (item.type == "movie") {
-                            Spacer(Modifier.weight(1f))
-                            StreamChips(item, onSelectAudio = vm::selectAudio, onSelectSubtitle = vm::selectSubtitle)
-                        }
+                        ActionButton(
+                            icon = R.drawable.ic_check,
+                            label = stringResource(if (item.isWatched) R.string.detail_mark_unwatched else R.string.detail_mark_watched),
+                            onClick = vm::toggleWatched,
+                            iconTint = if (item.isWatched) Accent else Color.Unspecified,
+                        )
+                    }
+                    if (item.type == "movie") {
+                        StreamChips(item, onSelectAudio = vm::selectAudio, onSelectSubtitle = vm::selectSubtitle)
                     }
                 }
             }
@@ -251,6 +269,7 @@ private fun DetailContent(item: Metadata, vm: DetailViewModel, onPlay: (Metadata
             item(key = "cast") { CastRow(item.roles) }
             item(key = "extras") { ExtrasRow(item.extras?.metadata.orEmpty()) { onPlay(it, true) } }
         }
+        }
     }
 
     LaunchedEffect(item.ratingKey, playTarget != null) {
@@ -285,6 +304,18 @@ private fun EpisodeInfo(source: State<Metadata?>, fallback: Metadata?) {
             episode.summary?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+private val MinimalScroll = object : BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+        val trailing = offset + size
+        return when {
+            offset >= 0f && trailing <= containerSize -> 0f
+            offset < 0f || size > containerSize -> offset
+            else -> trailing - containerSize
         }
     }
 }
