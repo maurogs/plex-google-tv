@@ -74,6 +74,10 @@ class PlayerActivity : ComponentActivity() {
     private var loadJob: Job? = null
     private var released = false
     private var lastReportedState: String? = null
+    private var mediaCandidates: List<Int> = emptyList()
+    private var currentAttempt = Attempt(0, false)
+
+    private data class Attempt(val candidate: Int, val transcode: Boolean)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,7 +100,7 @@ class PlayerActivity : ComponentActivity() {
             }
         })
 
-        load(ratingKey, fromStart = intent.getBooleanExtra(EXTRA_FROM_START, false), forceTranscode = false)
+        load(ratingKey, fromStart = intent.getBooleanExtra(EXTRA_FROM_START, false))
         startTickers()
     }
 
@@ -176,7 +180,7 @@ class PlayerActivity : ComponentActivity() {
         setContentView(root)
     }
 
-    private fun load(ratingKey: String, fromStart: Boolean, forceTranscode: Boolean, resumeAtMs: Long? = null) {
+    private fun load(ratingKey: String, fromStart: Boolean, attempt: Attempt = Attempt(0, false), resumeAtMs: Long? = null) {
         loadJob?.cancel()
         loadJob = lifecycleScope.launch {
             hideError()
@@ -192,12 +196,23 @@ class PlayerActivity : ComponentActivity() {
             }
             if (item.type == "episode" && queue.none { it.ratingKey == item.ratingKey }) loadQueue(item.ratingKey)
 
-            val plan = runCatching {
-                resolver.resolve(item, sessionId, AppGraph.prefs.quality, forceTranscode)
-            }.getOrElse {
-                showError(it.message ?: "No se pudo iniciar la reproducción.", null)
+            mediaCandidates = StreamResolver.playableMedia(item)
+            val mediaIndex = mediaCandidates.getOrNull(attempt.candidate)
+            if (mediaIndex == null) {
+                showError(StreamResolver.unavailableMessage(item), null)
                 return@launch
             }
+            currentAttempt = attempt
+            Log.i(StreamResolver.TAG, "Attempt media=$mediaIndex (${attempt.candidate + 1}/${mediaCandidates.size}) transcode=${attempt.transcode}")
+
+            val plan = runCatching {
+                resolver.resolve(item, mediaIndex, sessionId, AppGraph.prefs.quality, attempt.transcode)
+            }.getOrElse {
+                Log.e(StreamResolver.TAG, "Resolve failed", it)
+                failOver(it.message ?: "No se pudo iniciar la reproducción.", null, resumeAtMs)
+                return@launch
+            }
+            currentAttempt = attempt.copy(transcode = plan.transcode)
             transcoding = plan.transcode
             currentPart = plan.part
             pendingTrackPart = if (plan.transcode) null else plan.part
@@ -210,6 +225,23 @@ class PlayerActivity : ComponentActivity() {
             player.playWhenReady = true
             report("buffering")
         }
+    }
+
+    private fun failOver(message: String, details: String?, positionMs: Long?) {
+        val item = current
+        val next = nextAttempt()
+        if (item == null || next == null) {
+            showError(message, details)
+            return
+        }
+        rotateSession()
+        load(item.ratingKey, fromStart = false, attempt = next, resumeAtMs = positionMs)
+    }
+
+    private fun nextAttempt(): Attempt? = when {
+        !currentAttempt.transcode -> currentAttempt.copy(transcode = true)
+        currentAttempt.candidate + 1 < mediaCandidates.size -> Attempt(currentAttempt.candidate + 1, false)
+        else -> null
     }
 
     private fun loadQueue(ratingKey: String) {
@@ -296,14 +328,7 @@ class PlayerActivity : ComponentActivity() {
 
         override fun onPlayerError(error: PlaybackException) {
             logError(error)
-            val item = current ?: return
-            if (!transcoding) {
-                val position = player.currentPosition
-                rotateSession()
-                load(item.ratingKey, fromStart = false, forceTranscode = true, resumeAtMs = position)
-            } else {
-                showError(friendlyMessage(error), technicalDetails(error))
-            }
+            failOver(friendlyMessage(error), technicalDetails(error), player.currentPosition)
         }
     }
 
@@ -361,7 +386,7 @@ class PlayerActivity : ComponentActivity() {
         rotateSession()
         player.stop()
         setHint(null, null)
-        load(next.ratingKey, fromStart = false, forceTranscode = false)
+        load(next.ratingKey, fromStart = false)
     }
 
     private fun rotateSession() {

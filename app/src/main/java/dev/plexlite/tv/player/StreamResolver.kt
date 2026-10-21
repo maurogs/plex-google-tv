@@ -20,17 +20,8 @@ data class PlaybackPlan(
 
 class StreamResolver(private val server: PlexServer) {
 
-    suspend fun resolve(item: Metadata, sessionId: String, quality: Quality, forceTranscode: Boolean): PlaybackPlan {
-        item.media.forEachIndexed { index, media ->
-            media.parts.forEach { p -> Log.i(TAG, "Media[$index] id=${media.id} part=${p.id} file=${p.file} exists=${p.exists} accessible=${p.accessible}") }
-        }
-        val mediaIndex = item.media.indexOfFirst { media ->
-            media.parts.isNotEmpty() && media.parts.all { it.exists != false && it.accessible != false }
-        }.takeIf { it >= 0 } ?: 0
+    suspend fun resolve(item: Metadata, mediaIndex: Int, sessionId: String, quality: Quality, forceTranscode: Boolean): PlaybackPlan {
         val part = item.media.getOrNull(mediaIndex)?.parts?.firstOrNull() ?: error("Este elemento no tiene ningún archivo reproducible")
-        if (part.exists == false || part.accessible == false) {
-            error("El servidor Plex no puede leer el archivo de este vídeo (${if (part.exists == false) "no existe" else "sin acceso"}):\n${part.file.orEmpty()}")
-        }
         val effectiveQuality = if (server.saved.relay && quality == Quality.ORIGINAL) Quality.MBPS_2 else quality
         val audio = part.streams.firstOrNull { it.streamType == Stream.AUDIO && it.selected }
         val subtitle = part.streams.firstOrNull { it.streamType == Stream.SUBTITLE && it.selected }
@@ -124,6 +115,23 @@ class StreamResolver(private val server: PlexServer) {
 
     companion object {
         const val TAG = "PlexLite"
+
+        fun playableMedia(item: Metadata): List<Int> {
+            item.media.forEachIndexed { index, media ->
+                media.parts.forEach { p -> Log.i(TAG, "Media[$index] id=${media.id} part=${p.id} file=${p.file} exists=${p.exists} accessible=${p.accessible}") }
+            }
+            return item.media.indices.filter { index ->
+                val parts = item.media[index].parts
+                parts.isNotEmpty() && parts.all { it.exists != false && it.accessible != false }
+            }
+        }
+
+        fun unavailableMessage(item: Metadata): String {
+            val part = item.media.firstOrNull()?.parts?.firstOrNull()
+                ?: return "Este elemento no tiene ningún archivo reproducible."
+            val reason = if (part.exists == false) "no existe" else "sin acceso"
+            return "El servidor Plex no puede leer el archivo de este vídeo ($reason):\n${part.file.orEmpty()}"
+        }
 
         fun sidecarId(stream: Stream) = "plex-${stream.id}"
     }
