@@ -101,3 +101,7 @@ entry for every meaningful change so future sessions keep the thread.
 32. **Library chips no longer clipped vertically** — the chips row (a `LazyRow`) clips to its bounds, so the 1.1×
     focus scale and the press effect cut the top and bottom of the pill border (the search icon, outside the row,
     looked fine). The row now has 6 dp vertical content padding.
+33. **README rewrite + screenshots** — README restyled after plx-native / cleanyourtv: vibe-coded disclaimer up
+    front (simplicity and performance as goals), why it exists, real TV captures (`docs/screenshots/`: home,
+    library Recommended, library grid, detail), features, honest scope, build/install, acknowledgements and a
+    trademark note. Screenshots were taken from the owner's real library (not a demo library).
