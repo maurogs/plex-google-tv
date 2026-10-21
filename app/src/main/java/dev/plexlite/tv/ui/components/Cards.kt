@@ -180,6 +180,7 @@ fun MediaRow(
     cardSubtitle: (Metadata) -> String? = { it.cardSubtitle() },
     itemModifier: (Metadata) -> Modifier = { Modifier },
     onFocused: (Metadata) -> Unit = {},
+    cardWidth: Dp? = null,
 ) {
     Column(modifier) {
         Text(
@@ -197,6 +198,7 @@ fun MediaRow(
                     item = item,
                     style = style,
                     onClick = { onClick(item) },
+                    width = cardWidth ?: if (style == CardStyle.POSTER) 140.dp else 260.dp,
                     title = cardTitle(item),
                     subtitle = cardSubtitle(item),
                     modifier = itemModifier(item),

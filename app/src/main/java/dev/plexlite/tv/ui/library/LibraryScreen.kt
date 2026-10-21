@@ -1,6 +1,7 @@
 package dev.plexlite.tv.ui.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -42,6 +43,8 @@ import dev.plexlite.tv.ui.components.CardStyle
 import dev.plexlite.tv.ui.components.CenteredMessage
 import dev.plexlite.tv.ui.components.MediaCard
 import dev.plexlite.tv.ui.home.HeaderActions
+import dev.plexlite.tv.ui.home.HeroBackdrop
+import dev.plexlite.tv.ui.home.DebouncedHero
 import dev.plexlite.tv.ui.home.LibraryBar
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -110,45 +113,52 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
     val restore = remember { FocusRequester() }
     val restoreIndex = remember { vm.lastFocusedIndex }
 
-    Column(Modifier.fillMaxSize().padding(top = 32.dp)) {
-        LibraryBar(selectedKey = vm.sectionId, actions = actions)
-        Spacer(Modifier.height(20.dp))
-        Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
-            vm.total?.let {
-                Spacer(Modifier.width(16.dp))
-                Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val focusedItem = remember { mutableStateOf<Metadata?>(null) }
+    Box(Modifier.fillMaxSize()) {
+        DebouncedHero(focusedItem, 400) { HeroBackdrop(it, alpha = 0.35f, widthFraction = 0.8f, heightFraction = 0.8f) }
+        Column(Modifier.fillMaxSize().padding(top = 32.dp)) {
+            LibraryBar(selectedKey = vm.sectionId, actions = actions)
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                vm.total?.let {
+                    Spacer(Modifier.width(16.dp))
+                    Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.width(32.dp))
+                val filterLabel = when {
+                    vm.unwatchedOnly && vm.isShowLibrary -> R.string.library_all_shows
+                    vm.unwatchedOnly -> R.string.library_all_movies
+                    vm.isShowLibrary -> R.string.library_only_unwatched_shows
+                    else -> R.string.library_only_unwatched_movies
+                }
+                OutlinedButton(onClick = vm::toggleUnwatched) { Text(stringResource(filterLabel)) }
             }
-            Spacer(Modifier.width(32.dp))
-            val filterLabel = when {
-                vm.unwatchedOnly && vm.isShowLibrary -> R.string.library_all_shows
-                vm.unwatchedOnly -> R.string.library_all_movies
-                vm.isShowLibrary -> R.string.library_only_unwatched_shows
-                else -> R.string.library_only_unwatched_movies
-            }
-            OutlinedButton(onClick = vm::toggleUnwatched) { Text(stringResource(filterLabel)) }
-        }
-        when {
-            vm.error != null -> CenteredMessage(vm.error!!)
-            vm.items.isEmpty() && vm.total == null -> CenteredMessage(stringResource(R.string.loading))
-            vm.items.isEmpty() -> CenteredMessage(stringResource(R.string.library_empty))
-            else -> LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                itemsIndexed(vm.items, key = { _, item -> item.ratingKey }) { index, item ->
-                    if (index >= vm.items.size - 28) LaunchedEffect(vm.items.size) { vm.loadMore() }
-                    MediaCard(
-                        item = item,
-                        style = CardStyle.POSTER,
-                        onClick = { onOpenItem(item) },
-                        width = 140.dp,
-                        onFocused = { vm.lastFocusedIndex = index },
-                        modifier = if (index == restoreIndex) Modifier.focusRequester(restore) else Modifier,
-                    )
+            when {
+                vm.error != null -> CenteredMessage(vm.error!!)
+                vm.items.isEmpty() && vm.total == null -> CenteredMessage(stringResource(R.string.loading))
+                vm.items.isEmpty() -> CenteredMessage(stringResource(R.string.library_empty))
+                else -> LazyVerticalGrid(
+                    columns = GridCells.Fixed(7),
+                    contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    itemsIndexed(vm.items, key = { _, item -> item.ratingKey }) { index, item ->
+                        if (index >= vm.items.size - 28) LaunchedEffect(vm.items.size) { vm.loadMore() }
+                        MediaCard(
+                            item = item,
+                            style = CardStyle.POSTER,
+                            onClick = { onOpenItem(item) },
+                            width = 140.dp,
+                            onFocused = {
+                                vm.lastFocusedIndex = index
+                                focusedItem.value = item
+                            },
+                            modifier = if (index == restoreIndex) Modifier.focusRequester(restore) else Modifier,
+                        )
+                    }
                 }
             }
         }

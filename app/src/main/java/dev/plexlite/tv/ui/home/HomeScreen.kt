@@ -1,6 +1,10 @@
 package dev.plexlite.tv.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,12 +14,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +64,7 @@ class HomeViewModel : ViewModel() {
         private set
 
     var lastFocused: String? = null
+    var heroItem: Metadata? = null
     private var loading = false
 
     fun refresh() {
@@ -125,6 +133,11 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+private object NoVerticalBringIntoView : BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
+}
+
 @Composable
 private fun ErrorView(message: String, onRetry: () -> Unit, onOpenSettings: () -> Unit) {
     val focus = remember { FocusRequester() }
@@ -142,6 +155,7 @@ private fun ErrorView(message: String, onRetry: () -> Unit, onOpenSettings: () -
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HomeContentView(
     content: HomeContent,
@@ -160,35 +174,66 @@ private fun HomeContentView(
         if ("$prefix/${item.ratingKey}" == targetKey) Modifier.focusRequester(restore) else Modifier
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(28.dp),
-    ) {
-        item(key = "header") { LibraryBar(selectedKey = null, actions = actions) }
-        if (content.continueWatching.isNotEmpty()) {
-            item(key = "cw") {
-                MediaRow(
-                    title = stringResource(R.string.home_continue_watching),
-                    items = content.continueWatching,
-                    style = CardStyle.WIDE,
-                    onClick = onOpenItem,
-                    itemModifier = rowModifier("cw"),
-                    onFocused = { vm.lastFocused = "cw/${it.ratingKey}" },
-                )
-            }
+    val focusedItem = remember {
+        mutableStateOf(vm.heroItem ?: content.continueWatching.firstOrNull() ?: hubs.firstOrNull()?.metadata?.firstOrNull())
+    }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    fun onCardFocused(key: String, item: Metadata, row: Int) {
+        if (listState.firstVisibleItemIndex != row || listState.firstVisibleItemScrollOffset != 0) {
+            scope.launch { listState.animateScrollToItem(row) }
         }
-        hubs.distinctBy { it.hubIdentifier }.forEach { hub ->
-            item(key = "hub:${hub.hubIdentifier}") {
-                val style = if (hub.type == "episode" || hub.type == "clip") CardStyle.WIDE else CardStyle.POSTER
-                MediaRow(
-                    title = hub.title,
-                    items = hub.metadata,
-                    style = style,
-                    onClick = onOpenItem,
-                    itemModifier = rowModifier(hub.hubIdentifier),
-                    onFocused = { vm.lastFocused = "${hub.hubIdentifier}/${it.ratingKey}" },
-                )
+        vm.lastFocused = key
+        vm.heroItem = item
+        focusedItem.value = item
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        DebouncedHero(focusedItem) { HeroBackdrop(it) }
+        Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
+            LibraryBar(selectedKey = null, actions = actions)
+            DebouncedHero(focusedItem) { HeroInfo(it, height = 180.dp) }
+            val rowSpec = LocalBringIntoViewSpec.current
+            CompositionLocalProvider(LocalBringIntoViewSpec provides NoVerticalBringIntoView) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    if (content.continueWatching.isNotEmpty()) {
+                        item(key = "cw") {
+                            CompositionLocalProvider(LocalBringIntoViewSpec provides rowSpec) {
+                                MediaRow(
+                                    title = stringResource(R.string.home_continue_watching),
+                                    items = content.continueWatching,
+                                    style = CardStyle.WIDE,
+                                    onClick = onOpenItem,
+                                    itemModifier = rowModifier("cw"),
+                                    onFocused = { onCardFocused("cw/${it.ratingKey}", it, 0) },
+                                    cardWidth = 230.dp,
+                                )
+                            }
+                        }
+                    }
+                    val rowOffset = if (content.continueWatching.isNotEmpty()) 1 else 0
+                    hubs.distinctBy { it.hubIdentifier }.forEachIndexed { index, hub ->
+                        item(key = "hub:${hub.hubIdentifier}") {
+                            CompositionLocalProvider(LocalBringIntoViewSpec provides rowSpec) {
+                                val style = if (hub.type == "episode" || hub.type == "clip") CardStyle.WIDE else CardStyle.POSTER
+                                MediaRow(
+                                    title = hub.title,
+                                    items = hub.metadata,
+                                    style = style,
+                                    onClick = onOpenItem,
+                                    itemModifier = rowModifier(hub.hubIdentifier),
+                                    onFocused = { onCardFocused("${hub.hubIdentifier}/${it.ratingKey}", it, index + rowOffset) },
+                                    cardWidth = if (style == CardStyle.POSTER) 120.dp else 230.dp,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

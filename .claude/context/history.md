@@ -49,3 +49,7 @@ entry for every meaningful change so future sessions keep the thread.
     plays like any item). Related movies intentionally omitted (owner's decision).
 22. **Card badges** — ✓ in a dark circle for watched items (replaces the orange dot) and an unwatched
     episode count pill on shows/seasons (`leafCount - viewedLeafCount`), matching the official app.
+23. **Dynamic hero on Home and backdrop in libraries** — the focused card drives a backdrop + title/episode/
+    meta/summary block (250 ms debounce, 400 ms in libraries); the focused row snaps under the hero. Hero state
+    is read only inside `DebouncedHero` so focus changes don't recompose the rows (measured on the TV: janky
+    frames 10.3% → 7.3%, p95 38 ms → 19 ms).
