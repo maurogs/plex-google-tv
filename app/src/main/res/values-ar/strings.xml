@@ -70,6 +70,8 @@
     </plurals>
     <string name="library_unwatched">غير مُشاهَد</string>
     <string name="library_empty">لا يوجد شيء هنا</string>
+    <string name="library_tab_recommended">مقترحات</string>
+    <string name="library_tab_browse">المكتبة</string>
 
     <string name="detail_error">تعذّر التحميل: %1$s</string>
     <string name="detail_resume">استئناف</string>

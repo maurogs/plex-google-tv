@@ -74,3 +74,10 @@ entry for every meaningful change so future sessions keep the thread.
     e.g. "Tucli") instead of the server name, capped at 260 dp with an ellipsis for long names; falls back to
     the server name when no user is known. "Change server" (still only shown with >1 server) now shows the
     current server name underneath, since the header no longer does.
+28. **Library tabs: Recommended / Library** — like the official app, each library opens on "Recommended"
+    (`/hubs/sections/{id}`: Continue watching, Recently released, Recently added, … in the server's order),
+    rendered with the same hero + rows feed as Home (extracted to `ui/home/HubFeed.kt`). "Library" is the
+    existing grid with filter, sort and A–Z rail (loaded lazily on first open). The chosen tab is kept in
+    `AppGraph.libraryTab` for the session only, so switching libraries keeps it. The grid controls moved to a
+    second row (the sort label wrapped onto three lines otherwise), and switching tabs keeps focus on the tab.
+    "Categories" was skipped (owner's call).

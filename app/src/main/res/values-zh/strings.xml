@@ -65,6 +65,8 @@
     </plurals>
     <string name="library_unwatched">未观看</string>
     <string name="library_empty">这里什么都没有</string>
+    <string name="library_tab_recommended">推荐</string>
+    <string name="library_tab_browse">媒体库</string>
 
     <string name="detail_error">无法加载：%1$s</string>
     <string name="detail_resume">继续播放</string>

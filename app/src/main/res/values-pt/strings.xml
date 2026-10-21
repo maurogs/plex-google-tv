@@ -66,6 +66,8 @@
     </plurals>
     <string name="library_unwatched">Não assistidos</string>
     <string name="library_empty">Nada aqui</string>
+    <string name="library_tab_recommended">Recomendados</string>
+    <string name="library_tab_browse">Biblioteca</string>
 
     <string name="detail_error">Não foi possível carregar: %1$s</string>
     <string name="detail_resume">Retomar</string>

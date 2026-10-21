@@ -295,3 +295,5 @@ enum class LibrarySort(val param: String) {
     ADDED("addedAt:desc"),
     RATING("audienceRating:desc"),
 }
+
+enum class LibraryTab { RECOMMENDED, BROWSE }

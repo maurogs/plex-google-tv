@@ -20,6 +20,12 @@ class PlexServer(val saved: SavedServer, private val identity: PlexIdentity) {
             .map { hub -> hub.copy(metadata = hub.metadata.filter { it.type in VIDEO_TYPES && it.ratingKey.isNotEmpty() }) }
             .filter { it.metadata.isNotEmpty() }
 
+    suspend fun sectionHubs(sectionId: String): List<Hub> =
+        get("/hubs/sections/$sectionId", "count" to "16").hubs
+            .filter { it.type in VIDEO_TYPES || it.type == "mixed" }
+            .map { hub -> hub.copy(metadata = hub.metadata.filter { it.type in VIDEO_TYPES && it.ratingKey.isNotEmpty() }) }
+            .filter { it.metadata.isNotEmpty() }
+
     private companion object {
         val VIDEO_TYPES = setOf("movie", "show", "season", "episode")
     }

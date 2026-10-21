@@ -66,6 +66,8 @@
     </plurals>
     <string name="library_unwatched">Ungesehen</string>
     <string name="library_empty">Hier ist nichts</string>
+    <string name="library_tab_recommended">Empfohlen</string>
+    <string name="library_tab_browse">Mediathek</string>
 
     <string name="detail_error">Laden fehlgeschlagen: %1$s</string>
     <string name="detail_resume">Fortsetzen</string>

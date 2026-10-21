@@ -36,6 +36,7 @@ object AppGraph {
     var serverCount by mutableStateOf<Int?>(null)
     var homeUserCount by mutableStateOf<Int?>(null)
     var sections by mutableStateOf<List<Directory>>(emptyList())
+    var libraryTab by mutableStateOf(LibraryTab.RECOMMENDED)
     var libraryLayout by mutableStateOf(LibraryLayout())
         private set
 

@@ -43,7 +43,7 @@ a UI tailored to the owner's preferences.
 | Persistence | `data/Prefs.kt` | SharedPreferences + JSON: auth token, current server, quality, subtitle size, language, current user, per-user sessions, auto sign-in, library layouts. |
 | i18n | `data/AppLocale.kt`, `res/values*/strings.xml` | 10 languages (en default, es, fr, de, it, pt, ru, zh, ar, hi). Activities wrap their context with the chosen locale. |
 | Player | `player/PlayerActivity.kt`, `player/StreamResolver.kt`, `player/OverlayMenu.kt` | View-based (`PlayerView`) with custom controls/menus. |
-| UI | `ui/MainActivity.kt` (navigation), `ui/home`, `ui/library`, `ui/detail`, `ui/login`, `ui/profiles`, `ui/search`, `ui/settings`, `ui/components` | Compose. `HeaderActions` + `LibraryBar` shared by Home and Library screens. `ui/home/Hero.kt` holds the debounced dynamic hero (`DebouncedHero`), reused for the focused-episode info on show pages. |
+| UI | `ui/MainActivity.kt` (navigation), `ui/home`, `ui/library`, `ui/detail`, `ui/login`, `ui/profiles`, `ui/search`, `ui/settings`, `ui/components` | Compose. `HeaderActions` + `LibraryBar` shared by Home and Library screens. `ui/home/Hero.kt` holds the debounced dynamic hero (`DebouncedHero`), reused for the focused-episode info on show pages. `ui/home/HubFeed.kt` is the hero + rows feed shared by Home and a library's Recommended tab. |
 
 ## Playback design (the core of the "speed/transcoding" fix)
 
@@ -87,6 +87,9 @@ hints use the OK button.
   Switch user (only if >1 Home user), Change server (only if >1 server, shows the current server), App language,
   Organize libraries, Settings.
 - Library bar: fixed "Inicio" first, then libraries in the user's order; it also appears inside libraries.
+- Each library has two tabs: "Recommended" (default; the server's section hubs, Continue watching first) and
+  "Library" (full grid, filter, sort, A–Z). The tab is remembered for the session across libraries, not persisted.
+  "Categories" was declined.
 - Organize libraries: OK enters move mode (↑↓, OK drops, Back cancels); eye button on the left hides/shows.
   Layout is stored per user and per server; hidden libraries disappear from the bar and from Home rows
   (global rows just lose those items); "Continue watching" always shows everything.

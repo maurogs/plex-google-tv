@@ -68,6 +68,8 @@
     </plurals>
     <string name="library_unwatched">Непросмотренные</string>
     <string name="library_empty">Здесь ничего нет</string>
+    <string name="library_tab_recommended">Рекомендуемое</string>
+    <string name="library_tab_browse">Медиатека</string>
 
     <string name="detail_error">Не удалось загрузить: %1$s</string>
     <string name="detail_resume">Продолжить</string>

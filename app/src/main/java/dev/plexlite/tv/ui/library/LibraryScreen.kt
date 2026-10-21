@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -52,6 +54,8 @@ import androidx.tv.material3.Surface
 import dev.plexlite.tv.R
 import dev.plexlite.tv.data.AppGraph
 import dev.plexlite.tv.data.LibrarySort
+import dev.plexlite.tv.data.Hub
+import dev.plexlite.tv.data.LibraryTab
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.ui.components.CardStyle
 import dev.plexlite.tv.ui.components.CenteredMessage
@@ -64,6 +68,10 @@ import dev.plexlite.tv.ui.home.HeaderActions
 import dev.plexlite.tv.ui.home.HeroBackdrop
 import dev.plexlite.tv.ui.home.DebouncedHero
 import dev.plexlite.tv.ui.home.LibraryBar
+import dev.plexlite.tv.ui.home.HubFeed
+import dev.plexlite.tv.ui.home.LibraryChip
+import dev.plexlite.tv.ui.home.FeedFocus
+import dev.plexlite.tv.ui.home.toFeedRow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -87,12 +95,31 @@ class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
         private set
     var pendingFocus by mutableStateOf<Int?>(null)
 
-    var lastFocusedIndex = 0
-    private var loadJob: Job? = null
+    var recommended by mutableStateOf<List<Hub>?>(null)
+        private set
+    val feedFocus = FeedFocus()
 
-    init {
+    var lastFocusedIndex = 0
+    /** Set when the user switches tabs, so the new tab keeps focus on the tab chip instead of the content. */
+    var focusTabOnEnter = false
+    private var loadJob: Job? = null
+    private var browseStarted = false
+    private var recommendedJob: Job? = null
+
+    fun ensureBrowse() {
+        if (browseStarted) return
+        browseStarted = true
         loadMore()
         loadLetters()
+    }
+
+    fun loadRecommended() {
+        if (recommendedJob?.isActive == true) return
+        recommendedJob = viewModelScope.launch {
+            runCatching { AppGraph.requireServer().sectionHubs(sectionId) }
+                .onSuccess { recommended = it }
+                .onFailure { if (recommended == null) recommended = emptyList() }
+        }
     }
 
     fun toggleUnwatched() {
@@ -178,11 +205,78 @@ class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: LibraryViewModel = viewModel()) {
+    val tab = AppGraph.libraryTab
+    LaunchedEffect(tab) { if (tab == LibraryTab.BROWSE) vm.ensureBrowse() }
+    LifecycleResumeEffect(tab) {
+        if (tab == LibraryTab.RECOMMENDED) vm.loadRecommended()
+        onPauseOrDispose { }
+    }
+    when (tab) {
+        LibraryTab.RECOMMENDED -> RecommendedTab(onOpenItem, actions, vm)
+        LibraryTab.BROWSE -> BrowseTab(onOpenItem, actions, vm)
+    }
+}
+
+@Composable
+private fun TitleRow(vm: LibraryViewModel, focusTab: Boolean, extra: @Composable RowScope.() -> Unit = {}) {
+    val tabFocus = remember { FocusRequester() }
+    fun select(tab: LibraryTab) {
+        if (AppGraph.libraryTab == tab) return
+        vm.focusTabOnEnter = true
+        AppGraph.libraryTab = tab
+    }
+    Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
+        Spacer(Modifier.width(24.dp))
+        LibraryTab.entries.forEach { tab ->
+            val selected = AppGraph.libraryTab == tab
+            LibraryChip(
+                title = stringResource(if (tab == LibraryTab.RECOMMENDED) R.string.library_tab_recommended else R.string.library_tab_browse),
+                selected = selected,
+                onClick = { select(tab) },
+                modifier = if (selected) Modifier.focusRequester(tabFocus) else Modifier,
+            )
+            Spacer(Modifier.width(12.dp))
+        }
+        extra()
+    }
+    LaunchedEffect(Unit) { if (focusTab) runCatching { tabFocus.requestFocus() } }
+}
+
+@Composable
+private fun RecommendedTab(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: LibraryViewModel) {
+    val hubs = vm.recommended
+    val focusTab = remember { vm.focusTabOnEnter.also { vm.focusTabOnEnter = false } }
+    val header: @Composable () -> Unit = {
+        LibraryBar(selectedKey = vm.sectionId, actions = actions)
+        Spacer(Modifier.height(16.dp))
+        TitleRow(vm, focusTab)
+    }
+    if (hubs.isNullOrEmpty()) {
+        Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
+            header()
+            CenteredMessage(stringResource(if (hubs == null) R.string.loading else R.string.library_empty))
+        }
+    } else {
+        HubFeed(
+            rows = hubs.map { it.toFeedRow() },
+            focus = vm.feedFocus,
+            onOpenItem = onOpenItem,
+            heroHeight = 150.dp,
+            focusFirstCard = !focusTab,
+            header = header,
+        )
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun BrowseTab(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: LibraryViewModel) {
     val restore = remember { FocusRequester() }
     val restoreIndex = remember { vm.lastFocusedIndex }
+    val focusTab = remember { vm.focusTabOnEnter.also { vm.focusTabOnEnter = false } }
 
     val focusedItem = remember { mutableStateOf<Metadata?>(null) }
     val focusedIndex = remember { mutableIntStateOf(0) }
@@ -190,16 +284,17 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
     val jumpFocus = remember { FocusRequester() }
     Box(Modifier.fillMaxSize()) {
         DebouncedHero(focusedItem, 400) { HeroBackdrop(it, alpha = 0.35f, widthFraction = 0.8f, heightFraction = 0.8f) }
-        Column(Modifier.fillMaxSize().padding(top = 32.dp)) {
+        Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
             LibraryBar(selectedKey = vm.sectionId, actions = actions)
-            Spacer(Modifier.height(20.dp))
-            Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Spacer(Modifier.height(16.dp))
+            TitleRow(vm, focusTab) {
                 vm.total?.let {
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.width(12.dp))
                     Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Spacer(Modifier.width(32.dp))
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 val filterLabel = when {
                     vm.unwatchedOnly && vm.isShowLibrary -> R.string.library_all_shows
                     vm.unwatchedOnly -> R.string.library_all_movies
@@ -219,7 +314,7 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
                     LazyVerticalGrid(
                         state = gridState,
                         columns = GridCells.Fixed(7),
-                        contentPadding = PaddingValues(start = 48.dp, end = if (hasRail) 16.dp else 48.dp, top = 24.dp, bottom = 24.dp),
+                        contentPadding = PaddingValues(start = 48.dp, end = if (hasRail) 16.dp else 48.dp, top = 16.dp, bottom = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(20.dp),
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -249,7 +344,7 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: Li
     }
 
     LaunchedEffect(vm.items.isNotEmpty()) {
-        if (vm.items.isNotEmpty()) runCatching { restore.requestFocus() }
+        if (vm.items.isNotEmpty() && !focusTab) runCatching { restore.requestFocus() }
     }
     LaunchedEffect(vm.pendingFocus) {
         val target = vm.pendingFocus ?: return@LaunchedEffect

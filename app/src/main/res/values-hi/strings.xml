@@ -66,6 +66,8 @@
     </plurals>
     <string name="library_unwatched">नहीं देखे गए</string>
     <string name="library_empty">यहाँ कुछ नहीं है</string>
+    <string name="library_tab_recommended">सुझाए गए</string>
+    <string name="library_tab_browse">लाइब्रेरी</string>
 
     <string name="detail_error">लोड नहीं हो सका: %1$s</string>
     <string name="detail_resume">जारी रखें</string>

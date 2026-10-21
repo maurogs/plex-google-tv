@@ -68,6 +68,8 @@
     </plurals>
     <string name="library_unwatched">Unwatched</string>
     <string name="library_empty">Nothing here</string>
+    <string name="library_tab_recommended">Recommended</string>
+    <string name="library_tab_browse">Library</string>
 
     <string name="detail_error">Couldn\'t load: %1$s</string>
     <string name="detail_resume">Resume</string>

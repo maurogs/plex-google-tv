@@ -66,10 +66,11 @@ private fun SearchChip(onClick: () -> Unit) {
 }
 
 @Composable
-private fun LibraryChip(title: String, selected: Boolean, onClick: () -> Unit) {
+fun LibraryChip(title: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     if (selected) {
         Button(
             onClick = onClick,
+            modifier = modifier,
             colors = ButtonDefaults.colors(
                 containerColor = Accent,
                 contentColor = Color.Black,
@@ -78,6 +79,6 @@ private fun LibraryChip(title: String, selected: Boolean, onClick: () -> Unit) {
             ),
         ) { Text(title) }
     } else {
-        OutlinedButton(onClick = onClick) { Text(title) }
+        OutlinedButton(onClick = onClick, modifier = modifier) { Text(title) }
     }
 }
