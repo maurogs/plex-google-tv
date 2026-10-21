@@ -132,4 +132,13 @@
     <string name="error_network">Соединение с сервером Plex потеряно.</string>
     <string name="error_decoder">Телевизору не удалось декодировать это видео.</string>
     <string name="error_unknown">Во время воспроизведения произошла непредвиденная ошибка.</string>
+    <string name="search_title">Поиск</string>
+    <string name="search_hint">Начните вводить, чтобы искать в медиатеках</string>
+    <string name="search_no_results">По запросу «%1$s» ничего не найдено</string>
+    <string name="search_movies">Фильмы</string>
+    <string name="search_shows">Сериалы</string>
+    <string name="search_episodes">Серии</string>
+    <string name="search_space">Пробел</string>
+    <string name="search_delete">Удалить</string>
+    <string name="search_clear">Очистить</string>
 </resources>

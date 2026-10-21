@@ -24,6 +24,9 @@ class PlexServer(val saved: SavedServer, private val identity: PlexIdentity) {
         val VIDEO_TYPES = setOf("movie", "show", "season", "episode")
     }
 
+    suspend fun search(query: String): List<Hub> =
+        get("/hubs/search", "query" to query, "limit" to "20", "includeCollections" to "0", "includeExternalMedia" to "0").hubs
+
     suspend fun sections(): List<Directory> =
         get("/library/sections").directories.filter { it.type == "movie" || it.type == "show" }
 

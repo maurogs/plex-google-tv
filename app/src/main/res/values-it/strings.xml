@@ -128,4 +128,13 @@
     <string name="error_network">La connessione al server Plex si è interrotta.</string>
     <string name="error_decoder">La TV non è riuscita a decodificare questo video.</string>
     <string name="error_unknown">Si è verificato un errore imprevisto durante la riproduzione.</string>
+    <string name="search_title">Cerca</string>
+    <string name="search_hint">Scrivi per cercare nelle tue librerie</string>
+    <string name="search_no_results">Nessun risultato per «%1$s»</string>
+    <string name="search_movies">Film</string>
+    <string name="search_shows">Serie TV</string>
+    <string name="search_episodes">Episodi</string>
+    <string name="search_space">Spazio</string>
+    <string name="search_delete">Cancella</string>
+    <string name="search_clear">Svuota</string>
 </resources>

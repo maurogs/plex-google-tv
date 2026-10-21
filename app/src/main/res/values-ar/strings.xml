@@ -136,4 +136,13 @@
     <string name="error_network">انقطع الاتصال بخادم Plex.</string>
     <string name="error_decoder">تعذّر على التلفاز فك ترميز هذا الفيديو.</string>
     <string name="error_unknown">حدث خطأ غير متوقع أثناء التشغيل.</string>
+    <string name="search_title">بحث</string>
+    <string name="search_hint">اكتب للبحث في مكتباتك</string>
+    <string name="search_no_results">لا توجد نتائج لـ «%1$s»</string>
+    <string name="search_movies">أفلام</string>
+    <string name="search_shows">مسلسلات</string>
+    <string name="search_episodes">حلقات</string>
+    <string name="search_space">مسافة</string>
+    <string name="search_delete">حذف</string>
+    <string name="search_clear">مسح</string>
 </resources>

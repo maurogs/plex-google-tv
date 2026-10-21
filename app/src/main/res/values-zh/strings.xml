@@ -126,4 +126,13 @@
     <string name="error_network">与 Plex 服务器的连接已断开。</string>
     <string name="error_decoder">电视无法解码此视频。</string>
     <string name="error_unknown">播放期间发生意外错误。</string>
+    <string name="search_title">搜索</string>
+    <string name="search_hint">输入内容以搜索你的媒体库</string>
+    <string name="search_no_results">没有找到“%1$s”的结果</string>
+    <string name="search_movies">电影</string>
+    <string name="search_shows">剧集</string>
+    <string name="search_episodes">单集</string>
+    <string name="search_space">空格</string>
+    <string name="search_delete">删除</string>
+    <string name="search_clear">清空</string>
 </resources>

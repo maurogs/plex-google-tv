@@ -43,7 +43,7 @@ a UI tailored to the owner's preferences.
 | Persistence | `data/Prefs.kt` | SharedPreferences + JSON: auth token, current server, quality, subtitle size, language, current user, per-user sessions, auto sign-in, library layouts. |
 | i18n | `data/AppLocale.kt`, `res/values*/strings.xml` | 10 languages (en default, es, fr, de, it, pt, ru, zh, ar, hi). Activities wrap their context with the chosen locale. |
 | Player | `player/PlayerActivity.kt`, `player/StreamResolver.kt`, `player/OverlayMenu.kt` | View-based (`PlayerView`) with custom controls/menus. |
-| UI | `ui/MainActivity.kt` (navigation), `ui/home`, `ui/library`, `ui/detail`, `ui/login`, `ui/profiles`, `ui/settings`, `ui/components` | Compose. `HeaderActions` + `LibraryBar` shared by Home and Library screens. |
+| UI | `ui/MainActivity.kt` (navigation), `ui/home`, `ui/library`, `ui/detail`, `ui/login`, `ui/profiles`, `ui/search`, `ui/settings`, `ui/components` | Compose. `HeaderActions` + `LibraryBar` shared by Home and Library screens. |
 
 ## Playback design (the core of the "speed/transcoding" fix)
 
@@ -109,7 +109,7 @@ hints use the OK button.
 
 ## Open ideas / not done yet
 
-- Search screen; per-show remembered audio/subtitle choice; persistent playback speed.
+- Per-show remembered audio/subtitle choice; persistent playback speed.
 - Sync library order/visibility with Plex's own pinned libraries (undocumented API).
 - The multi-server picker flow and PIN-protected users were never tested (owner has one server, no PIN users).
 - Subtitle download end-to-end was never confirmed on the real server.

@@ -28,6 +28,7 @@ import dev.plexlite.tv.ui.home.HomeScreen
 import dev.plexlite.tv.ui.library.LibraryScreen
 import dev.plexlite.tv.ui.login.LoginScreen
 import dev.plexlite.tv.ui.profiles.ProfilesScreen
+import dev.plexlite.tv.ui.search.SearchScreen
 import dev.plexlite.tv.ui.settings.LibrariesScreen
 import dev.plexlite.tv.ui.settings.SettingsScreen
 import dev.plexlite.tv.ui.theme.Background
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
                                     nav.navigate("home") { popUpTo(0) { inclusive = true } }
                                 }
                             },
+                            onSearch = { nav.navigate("search") { launchSingleTop = true } },
                             onOpenSection = { section ->
                                 nav.navigate("library/${section.key}?title=${Uri.encode(section.title)}&type=${section.type}") {
                                     popUpTo("home")
@@ -125,6 +127,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("libraries") { LibrariesScreen() }
+                        composable("search") { SearchScreen(onOpenItem = { openItem(nav, it) }) }
                     }
                 }
             }

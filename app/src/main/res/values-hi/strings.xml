@@ -128,4 +128,13 @@
     <string name="error_network">Plex सर्वर से कनेक्शन टूट गया।</string>
     <string name="error_decoder">टीवी इस वीडियो को डिकोड नहीं कर सका।</string>
     <string name="error_unknown">प्लेबैक के दौरान एक अनपेक्षित त्रुटि हुई।</string>
+    <string name="search_title">खोजें</string>
+    <string name="search_hint">अपनी लाइब्रेरी में खोजने के लिए टाइप करें</string>
+    <string name="search_no_results">“%1$s” के लिए कोई परिणाम नहीं</string>
+    <string name="search_movies">फ़िल्में</string>
+    <string name="search_shows">टीवी सीरीज़</string>
+    <string name="search_episodes">एपिसोड</string>
+    <string name="search_space">स्पेस</string>
+    <string name="search_delete">मिटाएँ</string>
+    <string name="search_clear">साफ़ करें</string>
 </resources>

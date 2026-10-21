@@ -130,4 +130,13 @@
     <string name="error_network">The connection to the Plex server was lost.</string>
     <string name="error_decoder">The TV couldn\'t decode this video.</string>
     <string name="error_unknown">An unexpected error occurred during playback.</string>
+    <string name="search_title">Search</string>
+    <string name="search_hint">Type to search your libraries</string>
+    <string name="search_no_results">No results for “%1$s”</string>
+    <string name="search_movies">Movies</string>
+    <string name="search_shows">TV shows</string>
+    <string name="search_episodes">Episodes</string>
+    <string name="search_space">Space</string>
+    <string name="search_delete">Delete</string>
+    <string name="search_clear">Clear</string>
 </resources>

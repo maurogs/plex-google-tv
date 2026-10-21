@@ -128,4 +128,13 @@
     <string name="error_network">La connexion au serveur Plex a été perdue.</string>
     <string name="error_decoder">Le téléviseur n\'a pas pu décoder cette vidéo.</string>
     <string name="error_unknown">Une erreur inattendue s\'est produite pendant la lecture.</string>
+    <string name="search_title">Rechercher</string>
+    <string name="search_hint">Tapez pour rechercher dans vos bibliothèques</string>
+    <string name="search_no_results">Aucun résultat pour « %1$s »</string>
+    <string name="search_movies">Films</string>
+    <string name="search_shows">Séries</string>
+    <string name="search_episodes">Épisodes</string>
+    <string name="search_space">Espace</string>
+    <string name="search_delete">Effacer</string>
+    <string name="search_clear">Tout effacer</string>
 </resources>

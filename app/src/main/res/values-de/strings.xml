@@ -128,4 +128,13 @@
     <string name="error_network">Die Verbindung zum Plex-Server wurde unterbrochen.</string>
     <string name="error_decoder">Der Fernseher konnte dieses Video nicht dekodieren.</string>
     <string name="error_unknown">Während der Wiedergabe ist ein unerwarteter Fehler aufgetreten.</string>
+    <string name="search_title">Suchen</string>
+    <string name="search_hint">Tippe, um in deinen Mediatheken zu suchen</string>
+    <string name="search_no_results">Keine Ergebnisse für „%1$s“</string>
+    <string name="search_movies">Filme</string>
+    <string name="search_shows">Serien</string>
+    <string name="search_episodes">Folgen</string>
+    <string name="search_space">Leerzeichen</string>
+    <string name="search_delete">Löschen</string>
+    <string name="search_clear">Leeren</string>
 </resources>
