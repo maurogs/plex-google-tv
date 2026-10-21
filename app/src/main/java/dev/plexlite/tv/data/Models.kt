@@ -53,6 +53,7 @@ data class Directory(
     val key: String = "",
     val title: String = "",
     val type: String = "",
+    val size: Int = 0,
     val thumb: String? = null,
     val art: String? = null,
 )
@@ -286,4 +287,11 @@ data class LibraryLayout(
         val sorted = slots.map { filtered[it] }.sortedBy { hub -> hub.sectionKey?.let(position::get) ?: Int.MAX_VALUE }
         return filtered.toMutableList().apply { slots.zip(sorted).forEach { (slot, hub) -> set(slot, hub) } }
     }
+}
+
+enum class LibrarySort(val param: String) {
+    TITLE("titleSort:asc"),
+    YEAR("year:desc"),
+    ADDED("addedAt:desc"),
+    RATING("audienceRating:desc"),
 }

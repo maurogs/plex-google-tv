@@ -47,6 +47,11 @@
     <string name="library_all_movies">显示所有电影</string>
     <string name="library_only_unwatched_shows">仅显示未观看的剧集</string>
     <string name="library_all_shows">显示所有剧集</string>
+    <string name="library_sort_by">排序：%1$s</string>
+    <string name="sort_title">标题</string>
+    <string name="sort_year">年份</string>
+    <string name="sort_added">添加日期</string>
+    <string name="sort_rating">评分</string>
     <string name="libraries_move">移动</string>
     <string name="libraries_hide">隐藏</string>
     <string name="libraries_show">显示</string>

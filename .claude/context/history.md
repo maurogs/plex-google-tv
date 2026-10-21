@@ -53,3 +53,7 @@ entry for every meaningful change so future sessions keep the thread.
     meta/summary block (250 ms debounce, 400 ms in libraries); the focused row snaps under the hero. Hero state
     is read only inside `DebouncedHero` so focus changes don't recompose the rows (measured on the TV: janky
     frames 10.3% → 7.3%, p95 38 ms → 19 ms).
+24. **Library sort + A–Z rail** — "Sort: Title ▾" dropdown (title, year, date added, rating; remembered per
+    library) next to the unwatched filter. With title sort, a compact A–Z rail on the right uses
+    `/library/sections/{id}/firstCharacter` counts; jumping fetches the missing range in a single request and
+    focuses the first item of that letter. The current letter is highlighted while browsing.

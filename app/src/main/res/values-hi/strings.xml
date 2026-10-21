@@ -47,6 +47,11 @@
     <string name="library_all_movies">सभी फ़िल्में दिखाएँ</string>
     <string name="library_only_unwatched_shows">सिर्फ़ न देखी गई सीरीज़ दिखाएँ</string>
     <string name="library_all_shows">सभी सीरीज़ दिखाएँ</string>
+    <string name="library_sort_by">क्रम: %1$s</string>
+    <string name="sort_title">शीर्षक</string>
+    <string name="sort_year">वर्ष</string>
+    <string name="sort_added">जोड़ने की तारीख</string>
+    <string name="sort_rating">रेटिंग</string>
     <string name="libraries_move">खिसकाएँ</string>
     <string name="libraries_hide">छिपाएँ</string>
     <string name="libraries_show">दिखाएँ</string>

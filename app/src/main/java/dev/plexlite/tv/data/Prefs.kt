@@ -119,6 +119,12 @@ class Prefs(context: Context) {
             .orEmpty()
         set(value) = prefs.edit { putString(KEY_SESSIONS, Http.json.encodeToString(value)) }
 
+    var librarySorts: Map<String, String>
+        get() = prefs.getString(KEY_LIBRARY_SORTS, null)
+            ?.let { runCatching { Http.json.decodeFromString<Map<String, String>>(it) }.getOrNull() }
+            .orEmpty()
+        set(value) = prefs.edit { putString(KEY_LIBRARY_SORTS, Http.json.encodeToString(value)) }
+
     var libraryLayouts: Map<String, LibraryLayout>
         get() = prefs.getString(KEY_LIBRARY_LAYOUTS, null)
             ?.let { runCatching { Http.json.decodeFromString<Map<String, LibraryLayout>>(it) }.getOrNull() }
@@ -155,5 +161,6 @@ class Prefs(context: Context) {
         const val KEY_SESSIONS = "sessions"
         const val KEY_AUTO_SIGN_IN = "auto_sign_in"
         const val KEY_LIBRARY_LAYOUTS = "library_layouts"
+        const val KEY_LIBRARY_SORTS = "library_sorts"
     }
 }

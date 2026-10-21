@@ -47,6 +47,11 @@
     <string name="library_all_movies">Alle Filme anzeigen</string>
     <string name="library_only_unwatched_shows">Nur ungesehene Serien anzeigen</string>
     <string name="library_all_shows">Alle Serien anzeigen</string>
+    <string name="library_sort_by">Sortieren: %1$s</string>
+    <string name="sort_title">Titel</string>
+    <string name="sort_year">Jahr</string>
+    <string name="sort_added">Hinzugefügt am</string>
+    <string name="sort_rating">Bewertung</string>
     <string name="libraries_move">Verschieben</string>
     <string name="libraries_hide">Ausblenden</string>
     <string name="libraries_show">Einblenden</string>

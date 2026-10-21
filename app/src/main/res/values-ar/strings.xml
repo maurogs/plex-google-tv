@@ -47,6 +47,11 @@
     <string name="library_all_movies">عرض كل الأفلام</string>
     <string name="library_only_unwatched_shows">عرض المسلسلات غير المُشاهَدة فقط</string>
     <string name="library_all_shows">عرض كل المسلسلات</string>
+    <string name="library_sort_by">الترتيب: %1$s</string>
+    <string name="sort_title">العنوان</string>
+    <string name="sort_year">السنة</string>
+    <string name="sort_added">تاريخ الإضافة</string>
+    <string name="sort_rating">التقييم</string>
     <string name="libraries_move">نقل</string>
     <string name="libraries_hide">إخفاء</string>
     <string name="libraries_show">إظهار</string>

@@ -49,6 +49,11 @@
     <string name="library_all_movies">Show all movies</string>
     <string name="library_only_unwatched_shows">Show only unwatched shows</string>
     <string name="library_all_shows">Show all shows</string>
+    <string name="library_sort_by">Sort: %1$s</string>
+    <string name="sort_title">Title</string>
+    <string name="sort_year">Year</string>
+    <string name="sort_added">Date added</string>
+    <string name="sort_rating">Rating</string>
     <string name="libraries_move">Move</string>
     <string name="libraries_hide">Hide</string>
     <string name="libraries_show">Show</string>

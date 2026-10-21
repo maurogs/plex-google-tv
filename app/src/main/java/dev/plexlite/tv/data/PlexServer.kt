@@ -30,15 +30,27 @@ class PlexServer(val saved: SavedServer, private val identity: PlexIdentity) {
     suspend fun sections(): List<Directory> =
         get("/library/sections").directories.filter { it.type == "movie" || it.type == "show" }
 
-    suspend fun sectionItems(sectionId: String, start: Int, size: Int, unwatchedOnly: Boolean, shows: Boolean): MediaContainer {
+    suspend fun sectionItems(
+        sectionId: String,
+        start: Int,
+        size: Int,
+        unwatchedOnly: Boolean,
+        shows: Boolean,
+        sort: LibrarySort = LibrarySort.TITLE,
+    ): MediaContainer {
         val params = buildList {
-            add("sort" to "titleSort:asc")
+            add("sort" to sort.param)
             add("X-Plex-Container-Start" to start.toString())
             add("X-Plex-Container-Size" to size.toString())
             add("excludeFields" to "summary,tagline")
             if (unwatchedOnly) add((if (shows) "unwatchedLeaves" else "unwatched") to "1")
         }
         return get("/library/sections/$sectionId/all", *params.toTypedArray())
+    }
+
+    suspend fun firstCharacters(sectionId: String, unwatchedOnly: Boolean, shows: Boolean): List<Directory> {
+        val params = if (unwatchedOnly) arrayOf((if (shows) "unwatchedLeaves" else "unwatched") to "1") else emptyArray()
+        return get("/library/sections/$sectionId/firstCharacter", *params).directories
     }
 
     suspend fun metadata(ratingKey: String, checkFiles: Boolean = false, extras: Boolean = false): Metadata? =

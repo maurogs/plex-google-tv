@@ -47,6 +47,11 @@
     <string name="library_all_movies">Все фильмы</string>
     <string name="library_only_unwatched_shows">Только непросмотренные сериалы</string>
     <string name="library_all_shows">Все сериалы</string>
+    <string name="library_sort_by">Сортировка: %1$s</string>
+    <string name="sort_title">Название</string>
+    <string name="sort_year">Год</string>
+    <string name="sort_added">Дата добавления</string>
+    <string name="sort_rating">Рейтинг</string>
     <string name="libraries_move">Переместить</string>
     <string name="libraries_hide">Скрыть</string>
     <string name="libraries_show">Показать</string>
