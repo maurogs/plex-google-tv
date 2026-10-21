@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.NavHostController
@@ -22,10 +23,12 @@ import dev.plexlite.tv.data.AppLocale
 import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.player.PlayerActivity
 import dev.plexlite.tv.ui.detail.DetailScreen
+import dev.plexlite.tv.ui.home.HeaderActions
 import dev.plexlite.tv.ui.home.HomeScreen
 import dev.plexlite.tv.ui.library.LibraryScreen
 import dev.plexlite.tv.ui.login.LoginScreen
 import dev.plexlite.tv.ui.profiles.ProfilesScreen
+import dev.plexlite.tv.ui.settings.LibrariesScreen
 import dev.plexlite.tv.ui.settings.SettingsScreen
 import dev.plexlite.tv.ui.theme.Background
 import dev.plexlite.tv.ui.theme.PlexLiteTheme
@@ -49,6 +52,29 @@ class MainActivity : ComponentActivity() {
             PlexLiteTheme {
                 Box(Modifier.fillMaxSize().background(Background)) {
                     val nav = rememberNavController()
+                    val actions = remember(nav) {
+                        HeaderActions(
+                            onHome = {
+                                if (!nav.popBackStack("home", inclusive = false)) {
+                                    nav.navigate("home") { popUpTo(0) { inclusive = true } }
+                                }
+                            },
+                            onOpenSection = { section ->
+                                nav.navigate("library/${section.key}?title=${Uri.encode(section.title)}&type=${section.type}") {
+                                    popUpTo("home")
+                                    launchSingleTop = true
+                                }
+                            },
+                            onChangeServer = { nav.navigate("pickServer") },
+                            onChangeUser = { nav.navigate("profiles") },
+                            onOrganizeLibraries = { nav.navigate("libraries") },
+                            onOpenSettings = { nav.navigate("settings") },
+                            onLanguageChanged = { tag ->
+                                AppGraph.setLanguage(tag)
+                                recreate()
+                            },
+                        )
+                    }
                     NavHost(navController = nav, startDestination = start) {
                         composable("login") {
                             LoginScreen(onDone = {
@@ -79,35 +105,26 @@ class MainActivity : ComponentActivity() {
                             })
                         }
                         composable("home") {
-                            HomeScreen(
-                                onOpenSection = { section ->
-                                    nav.navigate("library/${section.key}?title=${Uri.encode(section.title)}&type=${section.type}")
-                                },
-                                onOpenItem = { openItem(nav, it) },
-                                onOpenSettings = { nav.navigate("settings") },
-                                onChangeServer = { nav.navigate("pickServer") },
-                                onChangeUser = { nav.navigate("profiles") },
-                                onLanguageChanged = { tag ->
-                                    AppGraph.setLanguage(tag)
-                                    recreate()
-                                },
-                            )
+                            HomeScreen(onOpenItem = { openItem(nav, it) }, actions = actions)
                         }
                         composable("library/{id}?title={title}&type={type}") {
-                            LibraryScreen(onOpenItem = { openItem(nav, it) })
+                            LibraryScreen(onOpenItem = { openItem(nav, it) }, actions = actions)
                         }
                         composable("detail/{ratingKey}") {
                             DetailScreen(onPlay = { item, fromStart -> play(item, fromStart) })
                         }
                         composable("settings") {
                             SettingsScreen(
-                                onChangeServer = { nav.navigate("pickServer") },
+                                onChangeServer = actions.onChangeServer,
                                 onSignOut = {
                                     AppGraph.signOut()
                                     nav.navigate("login") { popUpTo(0) { inclusive = true } }
                                 },
+                                onOrganizeLibraries = actions.onOrganizeLibraries,
+                                onLanguageChanged = actions.onLanguageChanged,
                             )
                         }
+                        composable("libraries") { LibrariesScreen() }
                     }
                 }
             }

@@ -2,6 +2,9 @@ package dev.plexlite.tv.data
 
 import android.content.Context
 import androidx.annotation.PluralsRes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.annotation.StringRes
 import dev.plexlite.tv.R
 import kotlinx.coroutines.CoroutineScope
@@ -30,8 +33,11 @@ object AppGraph {
     var server: PlexServer? = null
         private set
 
-    var serverCount: Int? = null
-    var homeUserCount: Int? = null
+    var serverCount by mutableStateOf<Int?>(null)
+    var homeUserCount by mutableStateOf<Int?>(null)
+    var sections by mutableStateOf<List<Directory>>(emptyList())
+    var libraryLayout by mutableStateOf(LibraryLayout())
+        private set
 
     val plexToken: String? get() = prefs.userToken ?: prefs.authToken
 
@@ -43,13 +49,27 @@ object AppGraph {
         plexTv = PlexTv(identity)
         picker = ConnectionPicker(identity)
         server = prefs.server?.let { PlexServer(it, identity) }
+        reloadLibraryLayout()
+    }
+
+    private fun layoutKey(): String = "${prefs.currentUser?.uuid ?: "account"}|${prefs.server?.id}"
+
+    private fun reloadLibraryLayout() {
+        libraryLayout = prefs.libraryLayouts[layoutKey()] ?: LibraryLayout()
+    }
+
+    fun updateLibraryLayout(layout: LibraryLayout) {
+        libraryLayout = layout
+        prefs.libraryLayouts = prefs.libraryLayouts + (layoutKey() to layout)
     }
 
     fun requireServer(): PlexServer = server ?: error(str(R.string.no_server))
 
     fun useServer(saved: SavedServer) {
+        if (prefs.server?.id != saved.id) sections = emptyList()
         prefs.server = saved
         server = PlexServer(saved, identity)
+        reloadLibraryLayout()
         val user = prefs.currentUser ?: return
         val token = plexToken ?: return
         if (!user.isProtected) prefs.sessions = prefs.sessions + (user.uuid to UserSession(token, saved))

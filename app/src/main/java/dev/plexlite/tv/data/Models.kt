@@ -32,13 +32,21 @@ data class MediaContainer(
 @Serializable
 data class Hub(
     val hubIdentifier: String = "",
+    val librarySectionID: String? = null,
     val title: String = "",
     val type: String = "",
     val key: String? = null,
     val size: Int = 0,
     val more: Boolean = false,
     @SerialName("Metadata") val metadata: List<Metadata> = emptyList(),
-)
+) {
+    val sectionKey: String?
+        get() = if (hubIdentifier.startsWith("home.")) {
+            null
+        } else {
+            librarySectionID ?: metadata.mapNotNull { it.librarySectionID }.distinct().singleOrNull()
+        }
+}
 
 @Serializable
 data class Directory(
@@ -79,6 +87,7 @@ data class Metadata(
     val audienceRating: Double? = null,
     val originallyAvailableAt: String? = null,
     val playQueueItemID: Long? = null,
+    val librarySectionID: String? = null,
     @SerialName("Media") val media: List<Media> = emptyList(),
     @SerialName("Marker") val markers: List<Marker> = emptyList(),
     @SerialName("Genre") val genres: List<Tag> = emptyList(),
@@ -233,3 +242,26 @@ data class SwitchedUser(
     val authToken: String? = null,
     val authenticationToken: String? = null,
 )
+
+@Serializable
+data class LibraryLayout(
+    val order: List<String> = emptyList(),
+    val hidden: Set<String> = emptySet(),
+) {
+    fun arrange(sections: List<Directory>): List<Directory> {
+        val byKey = sections.associateBy { it.key }
+        return order.mapNotNull { byKey[it] } + sections.filter { it.key !in order }
+    }
+
+    fun visible(sections: List<Directory>): List<Directory> = arrange(sections).filter { it.key !in hidden }
+
+    fun arrangeHubs(hubs: List<Hub>, sections: List<Directory>): List<Hub> {
+        val position = arrange(sections).mapIndexed { index, section -> section.key to index }.toMap()
+        val filtered = hubs
+            .map { hub -> hub.copy(metadata = hub.metadata.filter { it.librarySectionID !in hidden }) }
+            .filter { it.metadata.isNotEmpty() && it.sectionKey !in hidden }
+        val slots = filtered.indices.filter { filtered[it].sectionKey != null }
+        val sorted = slots.map { filtered[it] }.sortedBy { hub -> hub.sectionKey?.let(position::get) ?: Int.MAX_VALUE }
+        return filtered.toMutableList().apply { slots.zip(sorted).forEach { (slot, hub) -> set(slot, hub) } }
+    }
+}

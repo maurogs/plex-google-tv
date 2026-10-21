@@ -46,7 +46,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 data class HomeContent(
-    val sections: List<Directory>,
     val continueWatching: List<Metadata>,
     val hubs: List<Hub>,
 )
@@ -57,18 +56,13 @@ class HomeViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null)
         private set
 
-    var serverCount by mutableStateOf(AppGraph.serverCount)
-        private set
-    var homeUserCount by mutableStateOf(AppGraph.homeUserCount)
-        private set
-
     var lastFocused: String? = null
     private var loading = false
 
     fun refresh() {
         if (loading) return
-        if (serverCount == null) loadServerCount()
-        if (homeUserCount == null) loadHomeUserCount()
+        if (AppGraph.serverCount == null) loadServerCount()
+        if (AppGraph.homeUserCount == null) loadHomeUserCount()
         loading = true
         viewModelScope.launch {
             val result = runCatching { load() }.recoverCatching {
@@ -89,7 +83,6 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { AppGraph.plexTv.homeUsers(token).size }.onSuccess {
                 AppGraph.homeUserCount = it
-                homeUserCount = it
             }
         }
     }
@@ -99,7 +92,6 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { AppGraph.plexTv.servers(token).size }.onSuccess {
                 AppGraph.serverCount = it
-                serverCount = it
             }
         }
     }
@@ -109,18 +101,15 @@ class HomeViewModel : ViewModel() {
         val sections = viewModelScope.async { server.sections() }
         val continueWatching = viewModelScope.async { runCatching { server.continueWatching() }.getOrDefault(emptyList()) }
         val hubs = viewModelScope.async { server.homeHubs() }
-        return HomeContent(sections.await(), continueWatching.await(), hubs.await())
+        AppGraph.sections = sections.await()
+        return HomeContent(continueWatching.await(), hubs.await())
     }
 }
 
 @Composable
 fun HomeScreen(
-    onOpenSection: (Directory) -> Unit,
     onOpenItem: (Metadata) -> Unit,
-    onOpenSettings: () -> Unit,
-    onChangeServer: () -> Unit,
-    onChangeUser: () -> Unit,
-    onLanguageChanged: (String?) -> Unit,
+    actions: HeaderActions,
     vm: HomeViewModel = viewModel(),
 ) {
     LifecycleResumeEffect(Unit) {
@@ -130,8 +119,8 @@ fun HomeScreen(
 
     val content = vm.content
     when {
-        content != null -> HomeContentView(content, vm, onOpenSection, onOpenItem, onOpenSettings, onChangeServer, onChangeUser, onLanguageChanged)
-        vm.error != null -> ErrorView(vm.error!!, onRetry = vm::refresh, onOpenSettings = onOpenSettings)
+        content != null -> HomeContentView(content, vm, onOpenItem, actions)
+        vm.error != null -> ErrorView(vm.error!!, onRetry = vm::refresh, onOpenSettings = actions.onOpenSettings)
         else -> CenteredMessage(stringResource(R.string.loading))
     }
 }
@@ -157,17 +146,14 @@ private fun ErrorView(message: String, onRetry: () -> Unit, onOpenSettings: () -
 private fun HomeContentView(
     content: HomeContent,
     vm: HomeViewModel,
-    onOpenSection: (Directory) -> Unit,
     onOpenItem: (Metadata) -> Unit,
-    onOpenSettings: () -> Unit,
-    onChangeServer: () -> Unit,
-    onChangeUser: () -> Unit,
-    onLanguageChanged: (String?) -> Unit,
+    actions: HeaderActions,
 ) {
+    val hubs = AppGraph.libraryLayout.arrangeHubs(content.hubs, AppGraph.sections)
     val restore = remember { FocusRequester() }
     val initialKey = remember { vm.lastFocused }
     val firstKey = content.continueWatching.firstOrNull()?.let { "cw/${it.ratingKey}" }
-        ?: content.hubs.firstOrNull()?.let { hub -> hub.metadata.firstOrNull()?.let { "${hub.hubIdentifier}/${it.ratingKey}" } }
+        ?: hubs.firstOrNull()?.let { hub -> hub.metadata.firstOrNull()?.let { "${hub.hubIdentifier}/${it.ratingKey}" } }
     val targetKey = initialKey ?: firstKey
 
     fun rowModifier(prefix: String): (Metadata) -> Modifier = { item ->
@@ -179,28 +165,7 @@ private fun HomeContentView(
         contentPadding = PaddingValues(vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(28.dp),
     ) {
-        item(key = "header") {
-            Row(
-                modifier = Modifier.padding(horizontal = 48.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ServerMenuButton(
-                    serverName = AppGraph.server?.saved?.name ?: stringResource(R.string.app_name),
-                    canChangeServer = (vm.serverCount ?: 0) > 1,
-                    onChangeServer = onChangeServer,
-                    canChangeUser = (vm.homeUserCount ?: 0) > 1,
-                    onChangeUser = onChangeUser,
-                    onOpenSettings = onOpenSettings,
-                    onLanguageChanged = onLanguageChanged,
-                )
-                Spacer(Modifier.width(24.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
-                    items(content.sections, key = { it.key }) { section ->
-                        OutlinedButton(onClick = { onOpenSection(section) }) { Text(section.title) }
-                    }
-                }
-            }
-        }
+        item(key = "header") { LibraryBar(selectedKey = null, actions = actions) }
         if (content.continueWatching.isNotEmpty()) {
             item(key = "cw") {
                 MediaRow(
@@ -213,7 +178,7 @@ private fun HomeContentView(
                 )
             }
         }
-        content.hubs.distinctBy { it.hubIdentifier }.forEach { hub ->
+        hubs.distinctBy { it.hubIdentifier }.forEach { hub ->
             item(key = "hub:${hub.hubIdentifier}") {
                 val style = if (hub.type == "episode" || hub.type == "clip") CardStyle.WIDE else CardStyle.POSTER
                 MediaRow(

@@ -52,15 +52,9 @@ private enum class MenuPage { MAIN, LANGUAGE }
 private data class MenuRow(val label: String, val value: String? = null, val checked: Boolean = false, val onClick: () -> Unit)
 
 @Composable
-fun ServerMenuButton(
-    serverName: String,
-    canChangeServer: Boolean,
-    onChangeServer: () -> Unit,
-    canChangeUser: Boolean,
-    onChangeUser: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onLanguageChanged: (String?) -> Unit,
-) {
+fun ServerMenuButton(serverName: String, actions: HeaderActions) {
+    val canChangeServer = (AppGraph.serverCount ?: 0) > 1
+    val canChangeUser = (AppGraph.homeUserCount ?: 0) > 1
     var expanded by remember { mutableStateOf(false) }
     var page by remember { mutableStateOf(MenuPage.MAIN) }
     var opened by remember { mutableStateOf(false) }
@@ -113,25 +107,29 @@ fun ServerMenuButton(
                 MenuPage.MAIN -> listOfNotNull(
                     MenuRow(stringResource(R.string.menu_change_user), AppGraph.prefs.currentUser?.title) {
                         expanded = false
-                        onChangeUser()
+                        actions.onChangeUser()
                     }.takeIf { canChangeUser },
                     MenuRow(stringResource(R.string.menu_change_server)) {
                         expanded = false
-                        onChangeServer()
+                        actions.onChangeServer()
                     }.takeIf { canChangeServer },
                     MenuRow(stringResource(R.string.menu_app_language), currentLanguage) { page = MenuPage.LANGUAGE },
+                    MenuRow(stringResource(R.string.settings_organize_libraries)) {
+                        expanded = false
+                        actions.onOrganizeLibraries()
+                    },
                     MenuRow(stringResource(R.string.settings)) {
                         expanded = false
-                        onOpenSettings()
+                        actions.onOpenSettings()
                     },
                 )
                 MenuPage.LANGUAGE -> listOf(MenuRow(systemLabel, checked = currentTag == null) {
                     expanded = false
-                    if (currentTag != null) onLanguageChanged(null)
+                    if (currentTag != null) actions.onLanguageChanged(null)
                 }) + AppLocale.supported.map { (tag, name) ->
                     MenuRow(name, checked = tag == currentTag) {
                         expanded = false
-                        if (tag != currentTag) onLanguageChanged(tag)
+                        if (tag != currentTag) actions.onLanguageChanged(tag)
                     }
                 }
             }

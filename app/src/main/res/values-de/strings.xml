@@ -38,6 +38,21 @@
     <string name="settings_auto_user">Automatisch anmelden</string>
     <string name="settings_auto_user_on">Öffnet direkt als %1$s</string>
     <string name="settings_auto_user_off">Zeigt bei jedem Start die Benutzerauswahl</string>
+    <string name="nav_home">Start</string>
+    <string name="settings_libraries">Mediatheken</string>
+    <string name="settings_organize_libraries">Mediatheken organisieren</string>
+    <string name="settings_libraries_visible">%1$d von %2$d sichtbar</string>
+    <string name="libraries_hint">OK zum Verschieben einer Mediathek  ·  ← und OK auf dem Auge zum Aus- oder Einblenden</string>
+    <string name="library_only_unwatched_movies">Nur ungesehene Filme anzeigen</string>
+    <string name="library_all_movies">Alle Filme anzeigen</string>
+    <string name="library_only_unwatched_shows">Nur ungesehene Serien anzeigen</string>
+    <string name="library_all_shows">Alle Serien anzeigen</string>
+    <string name="libraries_move">Verschieben</string>
+    <string name="libraries_hide">Ausblenden</string>
+    <string name="libraries_show">Einblenden</string>
+    <string name="libraries_hidden">Ausgeblendet</string>
+    <string name="libraries_moving_hint">↑ ↓ zum Verschieben  ·  OK zum Ablegen  ·  Zurück zum Abbrechen</string>
+    <string name="settings_version">Version %1$s</string>
 
     <string name="library_error">Fehler beim Laden der Mediathek: %1$s</string>
     <plurals name="library_count">

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -31,7 +32,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.FilterChip
+import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import dev.plexlite.tv.R
@@ -40,13 +41,15 @@ import dev.plexlite.tv.data.Metadata
 import dev.plexlite.tv.ui.components.CardStyle
 import dev.plexlite.tv.ui.components.CenteredMessage
 import dev.plexlite.tv.ui.components.MediaCard
+import dev.plexlite.tv.ui.home.HeaderActions
+import dev.plexlite.tv.ui.home.LibraryBar
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
     val sectionId: String = checkNotNull(savedState["id"])
     val title: String = savedState.get<String>("title").orEmpty()
-    private val isShowLibrary: Boolean = savedState.get<String>("type") == "show"
+    val isShowLibrary: Boolean = savedState.get<String>("type") == "show"
 
     val items = mutableStateListOf<Metadata>()
     var total by mutableStateOf<Int?>(null)
@@ -65,12 +68,18 @@ class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
 
     fun toggleUnwatched() {
         unwatchedOnly = !unwatchedOnly
-        loadJob?.cancel()
-        loadJob = null
-        items.clear()
-        total = null
         lastFocusedIndex = 0
-        loadMore()
+        loadJob?.cancel()
+        val filter = unwatchedOnly
+        loadJob = viewModelScope.launch {
+            runCatching { AppGraph.requireServer().sectionItems(sectionId, 0, PAGE, filter, isShowLibrary) }
+                .onSuccess { page ->
+                    items.clear()
+                    items.addAll(page.metadata.distinctBy { it.ratingKey })
+                    total = page.totalSize ?: page.metadata.size
+                    error = null
+                }
+        }
     }
 
     fun loadMore() {
@@ -97,11 +106,13 @@ class LibraryViewModel(savedState: SavedStateHandle) : ViewModel() {
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun LibraryScreen(onOpenItem: (Metadata) -> Unit, vm: LibraryViewModel = viewModel()) {
+fun LibraryScreen(onOpenItem: (Metadata) -> Unit, actions: HeaderActions, vm: LibraryViewModel = viewModel()) {
     val restore = remember { FocusRequester() }
-    val restoreIndex = remember(vm.unwatchedOnly) { vm.lastFocusedIndex }
+    val restoreIndex = remember { vm.lastFocusedIndex }
 
     Column(Modifier.fillMaxSize().padding(top = 32.dp)) {
+        LibraryBar(selectedKey = vm.sectionId, actions = actions)
+        Spacer(Modifier.height(20.dp))
         Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(vm.title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
             vm.total?.let {
@@ -109,7 +120,13 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, vm: LibraryViewModel = viewMod
                 Text(pluralStringResource(R.plurals.library_count, it, it), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.width(32.dp))
-            FilterChip(selected = vm.unwatchedOnly, onClick = vm::toggleUnwatched) { Text(stringResource(R.string.library_unwatched)) }
+            val filterLabel = when {
+                vm.unwatchedOnly && vm.isShowLibrary -> R.string.library_all_shows
+                vm.unwatchedOnly -> R.string.library_all_movies
+                vm.isShowLibrary -> R.string.library_only_unwatched_shows
+                else -> R.string.library_only_unwatched_movies
+            }
+            OutlinedButton(onClick = vm::toggleUnwatched) { Text(stringResource(filterLabel)) }
         }
         when {
             vm.error != null -> CenteredMessage(vm.error!!)
@@ -137,7 +154,7 @@ fun LibraryScreen(onOpenItem: (Metadata) -> Unit, vm: LibraryViewModel = viewMod
         }
     }
 
-    LaunchedEffect(vm.items.isNotEmpty(), vm.unwatchedOnly) {
+    LaunchedEffect(vm.items.isNotEmpty()) {
         if (vm.items.isNotEmpty()) runCatching { restore.requestFocus() }
     }
 }

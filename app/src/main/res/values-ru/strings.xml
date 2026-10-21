@@ -38,6 +38,21 @@
     <string name="settings_auto_user">Входить автоматически</string>
     <string name="settings_auto_user_on">Открывается сразу как %1$s</string>
     <string name="settings_auto_user_off">Выбор пользователя показывается при каждом запуске</string>
+    <string name="nav_home">Главная</string>
+    <string name="settings_libraries">Медиатеки</string>
+    <string name="settings_organize_libraries">Упорядочить медиатеки</string>
+    <string name="settings_libraries_visible">Видно %1$d из %2$d</string>
+    <string name="libraries_hint">OK — переместить медиатеку  ·  ← и OK на глазе — скрыть или показать</string>
+    <string name="library_only_unwatched_movies">Только непросмотренные фильмы</string>
+    <string name="library_all_movies">Все фильмы</string>
+    <string name="library_only_unwatched_shows">Только непросмотренные сериалы</string>
+    <string name="library_all_shows">Все сериалы</string>
+    <string name="libraries_move">Переместить</string>
+    <string name="libraries_hide">Скрыть</string>
+    <string name="libraries_show">Показать</string>
+    <string name="libraries_hidden">Скрыта</string>
+    <string name="libraries_moving_hint">↑ ↓ — переместить  ·  OK — готово  ·  Назад — отмена</string>
+    <string name="settings_version">Версия %1$s</string>
 
     <string name="library_error">Ошибка загрузки медиатеки: %1$s</string>
     <plurals name="library_count">

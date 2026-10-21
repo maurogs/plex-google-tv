@@ -38,6 +38,21 @@
     <string name="settings_auto_user">Iniciar sesión automáticamente</string>
     <string name="settings_auto_user_on">Se abre directamente como %1$s</string>
     <string name="settings_auto_user_off">Muestra la selección de usuario cada vez que abres la app</string>
+    <string name="nav_home">Inicio</string>
+    <string name="settings_libraries">Bibliotecas</string>
+    <string name="settings_organize_libraries">Organizar bibliotecas</string>
+    <string name="settings_libraries_visible">%1$d de %2$d visibles</string>
+    <string name="libraries_hint">OK para mover una biblioteca  ·  ← y OK en el ojo para ocultarla o mostrarla</string>
+    <string name="library_only_unwatched_movies">Mostrar solo películas no vistas</string>
+    <string name="library_all_movies">Mostrar todas las películas</string>
+    <string name="library_only_unwatched_shows">Mostrar solo series sin ver</string>
+    <string name="library_all_shows">Mostrar todas las series</string>
+    <string name="libraries_move">Mover</string>
+    <string name="libraries_hide">Ocultar</string>
+    <string name="libraries_show">Mostrar</string>
+    <string name="libraries_hidden">Oculta</string>
+    <string name="libraries_moving_hint">↑ ↓ para mover  ·  OK para soltar  ·  Atrás para cancelar</string>
+    <string name="settings_version">Versión %1$s</string>
 
     <string name="library_error">Error cargando la biblioteca: %1$s</string>
     <plurals name="library_count">

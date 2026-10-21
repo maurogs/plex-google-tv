@@ -38,6 +38,21 @@
     <string name="settings_auto_user">अपने आप साइन इन करें</string>
     <string name="settings_auto_user_on">सीधे %1$s के रूप में खुलता है</string>
     <string name="settings_auto_user_off">हर बार ऐप खोलने पर उपयोगकर्ता चुनने का विकल्प दिखाता है</string>
+    <string name="nav_home">होम</string>
+    <string name="settings_libraries">लाइब्रेरी</string>
+    <string name="settings_organize_libraries">लाइब्रेरी व्यवस्थित करें</string>
+    <string name="settings_libraries_visible">%2$d में से %1$d दिख रही हैं</string>
+    <string name="libraries_hint">लाइब्रेरी खिसकाने के लिए OK  ·  छिपाने या दिखाने के लिए ← और फिर आँख पर OK</string>
+    <string name="library_only_unwatched_movies">सिर्फ़ न देखी गई फ़िल्में दिखाएँ</string>
+    <string name="library_all_movies">सभी फ़िल्में दिखाएँ</string>
+    <string name="library_only_unwatched_shows">सिर्फ़ न देखी गई सीरीज़ दिखाएँ</string>
+    <string name="library_all_shows">सभी सीरीज़ दिखाएँ</string>
+    <string name="libraries_move">खिसकाएँ</string>
+    <string name="libraries_hide">छिपाएँ</string>
+    <string name="libraries_show">दिखाएँ</string>
+    <string name="libraries_hidden">छिपी हुई</string>
+    <string name="libraries_moving_hint">↑ ↓ खिसकाने के लिए  ·  OK रखने के लिए  ·  वापस रद्द करने के लिए</string>
+    <string name="settings_version">संस्करण %1$s</string>
 
     <string name="library_error">लाइब्रेरी लोड करने में त्रुटि: %1$s</string>
     <plurals name="library_count">
