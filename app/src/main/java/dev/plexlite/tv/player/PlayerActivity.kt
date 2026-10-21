@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
+import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
 import android.util.TypedValue
@@ -13,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -55,7 +58,10 @@ class PlayerActivity : ComponentActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var titleView: TextView
     private lateinit var hintView: TextView
-    private lateinit var messageView: TextView
+    private lateinit var errorPanel: LinearLayout
+    private lateinit var errorMessage: TextView
+    private lateinit var errorDetails: TextView
+    private lateinit var errorButton: TextView
 
     private var current: Metadata? = null
     private var currentPart: Part? = null
@@ -165,14 +171,7 @@ class PlayerActivity : ComponentActivity() {
                 .apply { setMargins(0, 0, dp(64), dp(64)) },
         )
 
-        messageView = TextView(this).apply {
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
-            gravity = Gravity.CENTER
-            setPadding(dp(96), 0, dp(96), 0)
-            visibility = View.GONE
-        }
-        root.addView(messageView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+        buildErrorPanel(root)
 
         setContentView(root)
     }
@@ -180,10 +179,10 @@ class PlayerActivity : ComponentActivity() {
     private fun load(ratingKey: String, fromStart: Boolean, forceTranscode: Boolean, resumeAtMs: Long? = null) {
         loadJob?.cancel()
         loadJob = lifecycleScope.launch {
-            messageView.visibility = View.GONE
+            hideError()
             val item = runCatching { server.metadata(ratingKey, checkFiles = true) }.getOrNull()
             if (item == null) {
-                showError("No se pudo cargar el elemento.")
+                showError("No se pudo cargar este vídeo desde el servidor.", null)
                 return@launch
             }
             current = item
@@ -196,7 +195,7 @@ class PlayerActivity : ComponentActivity() {
             val plan = runCatching {
                 resolver.resolve(item, sessionId, AppGraph.prefs.quality, forceTranscode)
             }.getOrElse {
-                showError("No se pudo iniciar la reproducción: ${it.message}")
+                showError(it.message ?: "No se pudo iniciar la reproducción.", null)
                 return@launch
             }
             transcoding = plan.transcode
@@ -303,7 +302,7 @@ class PlayerActivity : ComponentActivity() {
                 rotateSession()
                 load(item.ratingKey, fromStart = false, forceTranscode = true, resumeAtMs = position)
             } else {
-                showError("Error de reproducción: ${error.errorCodeName}\n${error.message.orEmpty()}")
+                showError(friendlyMessage(error), technicalDetails(error))
             }
         }
     }
@@ -398,12 +397,117 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
-    private fun showError(message: String) {
-        messageView.text = message
-        messageView.visibility = View.VISIBLE
+    private fun buildErrorPanel(root: FrameLayout) {
+        errorPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(48), dp(40), dp(48), dp(36))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(20).toFloat()
+                setColor(0xF21C1E23.toInt())
+            }
+            visibility = View.GONE
+        }
+        errorPanel.addView(
+            TextView(this).apply {
+                text = "No se puede reproducir"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+            },
+        )
+        errorMessage = TextView(this).apply {
+            setTextColor(0xFFDADDE3.toInt())
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            gravity = Gravity.CENTER
+            setLineSpacing(0f, 1.2f)
+            setPadding(0, dp(16), 0, 0)
+        }
+        errorPanel.addView(errorMessage)
+        errorDetails = TextView(this).apply {
+            setTextColor(0xFF8A8F99.toInt())
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(12), 0, 0)
+        }
+        errorPanel.addView(errorDetails)
+        errorButton = TextView(this).apply {
+            text = "OK"
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            minWidth = dp(160)
+            setPadding(dp(32), dp(12), dp(32), dp(12))
+            isFocusable = true
+            isClickable = true
+            background = StateListDrawable().apply {
+                addState(intArrayOf(android.R.attr.state_focused), pill(0xFFE5A00D.toInt()))
+                addState(intArrayOf(), pill(0xFF3A3D44.toInt()))
+            }
+            setTextColor(Color.WHITE)
+            setOnFocusChangeListener { view, hasFocus ->
+                (view as TextView).setTextColor(if (hasFocus) Color.BLACK else Color.WHITE)
+            }
+            setOnClickListener { finish() }
+        }
+        errorPanel.addView(
+            errorButton,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(28) },
+        )
+        root.addView(errorPanel, FrameLayout.LayoutParams(dp(640), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+    }
+
+    private fun pill(color: Int) = GradientDrawable().apply {
+        cornerRadius = dp(28).toFloat()
+        setColor(color)
+    }
+
+    private fun showError(message: String, details: String?) {
+        player.stop()
+        setHint(null, null)
+        playerView.hideController()
+        playerView.useController = false
+        titleView.visibility = View.VISIBLE
+        errorMessage.text = message
+        errorDetails.text = details.orEmpty()
+        errorDetails.visibility = if (details.isNullOrEmpty()) View.GONE else View.VISIBLE
+        errorPanel.visibility = View.VISIBLE
+        errorButton.requestFocus()
+    }
+
+    private fun hideError() {
+        errorPanel.visibility = View.GONE
+        playerView.useController = true
+    }
+
+    private val errorVisible: Boolean get() = errorPanel.visibility == View.VISIBLE
+
+    private fun friendlyMessage(error: PlaybackException): String {
+        val httpCode = generateSequence<Throwable>(error) { it.cause }
+            .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+            .firstOrNull()?.responseCode
+        return when {
+            httpCode == 404 -> "El servidor Plex no encuentra el archivo de este vídeo. Puede que se haya movido o que el disco no esté disponible."
+            httpCode == 401 || httpCode == 403 -> "El servidor Plex ha rechazado el acceso a este vídeo."
+            httpCode != null && httpCode >= 500 -> "El servidor Plex ha tenido un error al preparar este vídeo."
+            error.errorCode in PlaybackException.ERROR_CODE_IO_UNSPECIFIED..PlaybackException.ERROR_CODE_IO_CLEARTEXT_NOT_PERMITTED ->
+                "Se ha perdido la conexión con el servidor Plex."
+            error.errorCode in PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED ->
+                "La TV no ha podido decodificar este vídeo."
+            else -> "Ha ocurrido un error inesperado durante la reproducción."
+        }
+    }
+
+    private fun technicalDetails(error: PlaybackException): String {
+        val httpCode = generateSequence<Throwable>(error) { it.cause }
+            .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+            .firstOrNull()?.responseCode
+        return listOfNotNull(error.errorCodeName, httpCode?.let { "HTTP $it" }).joinToString(" · ")
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (errorVisible) return super.dispatchKeyEvent(event)
         if (!released && !playerView.isControllerFullyVisible) {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
